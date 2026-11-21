@@ -1,7 +1,7 @@
 <!--HEAD-->
 <title>Siegeworks</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Build a fort, share its code, and siege other people's forts. A deterministic physics siege game, prototype 0.2.">
+<meta name="description" content="Build a fort, share its code, and siege other people's forts. A deterministic physics siege game with a player-run fort board.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=IBM+Plex+Sans+Condensed:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -56,6 +56,19 @@ button.chip[aria-pressed="true"] { border-color: var(--pencil); box-shadow: inse
 button.chip:disabled, button.act:disabled { opacity: 0.4; cursor: not-allowed; }
 button.act { background: var(--pencil); color: var(--sheet-deep); border-color: var(--pencil); font-weight: 600; }
 button.act.ghost { background: none; color: var(--chalk); border-color: var(--rule); font-weight: 500; }
+a.act { font: 600 14px var(--body); color: var(--sheet-deep); background: var(--pencil); border: 1px solid var(--pencil); padding: 6px 12px; text-decoration: none; display: inline-flex; align-items: center; }
+a.act.ghost { background: none; color: var(--chalk); border-color: var(--rule); font-weight: 500; }
+.board-head { font: 12px var(--mono); color: var(--chalk-dim); margin: 0; }
+.board-head b { color: var(--chalk); font-weight: 500; }
+.table-wrap { overflow-x: auto; max-width: 100%; border: 1px solid var(--rule); }
+table.board { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
+table.board th { font: 500 11px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--chalk-dim); text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.board td { padding: 7px 10px; border-bottom: 1px solid color-mix(in srgb, var(--rule) 45%, transparent); white-space: nowrap; }
+table.board tr[data-id] { cursor: pointer; }
+table.board tr[aria-selected="true"] td { background: color-mix(in srgb, var(--pencil) 12%, transparent); }
+table.board td.num, table.board th.num { text-align: right; }
+table.board .fid { font: 500 12px var(--mono); color: var(--pencil); margin-right: 6px; }
+.empty { margin: 0; padding: 18px 12px; color: var(--chalk-dim); }
 button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px solid var(--pencil); outline-offset: 2px; }
 .swatch { width: 12px; height: 12px; border: 1px solid var(--chalk); display: inline-block; }
 .count { font: 500 12px var(--mono); color: var(--pencil); }
@@ -102,7 +115,7 @@ footer a { color: var(--chalk); }
 <!--BODY-->
 <div class="wrap">
   <header>
-    <h1>Siegeworks <small>PROTOTYPE 0.2</small></h1>
+    <h1>Siegeworks <small>PROTOTYPE 0.3</small></h1>
     <p class="tag">Build a fort and share its code. Someone else lays siege. Every siege replays to the same result in any browser, which is how validators will check it later.</p>
     <button class="act ghost" id="sound" aria-pressed="true">Sound on</button>
   </header>
@@ -111,6 +124,7 @@ footer a { color: var(--chalk); }
     <div class="tabs" role="tablist" aria-label="Mode">
       <button class="tab" role="tab" id="tab-siege" aria-selected="true">Siege</button>
       <button class="tab" role="tab" id="tab-build" aria-selected="false">Build</button>
+      <button class="tab" role="tab" id="tab-board" aria-selected="false">Board</button>
     </div>
     <div class="card" id="fort-card" aria-live="polite"></div>
   </div>
@@ -171,6 +185,7 @@ footer a { color: var(--chalk); }
         <button class="act" id="test-fort">Siege it</button>
         <button class="act ghost" id="bot-fort">Bot siege</button>
         <button class="act ghost" id="copy-fort">Copy fort code</button>
+        <a class="act ghost" id="post-fort" href="#" target="_blank" rel="noopener">Post to the board</a>
       </div>
     </div>
     <div class="group">
@@ -181,8 +196,11 @@ footer a { color: var(--chalk); }
       </div>
     </div>
     <p class="check" id="check" aria-live="polite"></p>
-    <p class="hint">Click inside the dashed zone to place a piece. Right-click or Erase removes one. Every fort needs at least one heart, and it must stand on its own. Bot siege sends a search bot after your fort and replays its best attack.</p>
+    <p class="hint">Click inside the dashed zone to place a piece. Right-click or Erase removes one. Every fort needs at least one heart, and it must stand on its own. Bot siege sends a search bot after your fort and replays its best attack. Post to the board opens a GitHub issue that the validator replays.</p>
   </section>
+
+  <!-- BOARD TRAY -->
+  <section class="group" id="board-tray" hidden></section>
 
   <section class="group">
     <span class="label">Load a fort code or a siege plan</span>

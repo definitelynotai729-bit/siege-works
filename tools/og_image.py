@@ -11,7 +11,7 @@ with sync_playwright() as p:
     pg.goto((ROOT / 'docs' / 'index.html').as_uri())
     pg.wait_for_function("document.querySelector('#status').textContent.includes('hearts')")
     pg.select_option('#fort-pick', '2')                       # Watchtower
-    pg.fill('#load-text', 'SP1.b2i~42~l5'); pg.click('#load-btn')  # the solver's one-boulder line
+    pg.fill('#load-text', 'SP1.b2i~51~r3'); pg.click('#load-btn')  # the solver's one-boulder line
     pg.add_style_tag(content='.titleblock { visibility: hidden !important; }')
     pg.wait_for_function("(() => { const m = document.querySelector('#titleblock').textContent.match(/tick (\\d+)/); return m && +m[1] >= %d; })()" % TICK, polling=16, timeout=30000)
     shot = pg.locator('#field').screenshot()

@@ -1,0 +1,16 @@
+name: Playtest feedback
+description: What felt good, what felt wrong, what you wanted to do but couldn't.
+labels: ["feedback"]
+body:
+  - type: textarea
+    id: notes
+    attributes:
+      label: What happened?
+      description: Fort codes and siege plans help a lot. Paste them here.
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser
+      placeholder: e.g. iPhone 15, Safari

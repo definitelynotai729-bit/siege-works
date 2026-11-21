@@ -26,3 +26,14 @@
 - Result hash now includes VERSION (sim-0.2), so any physics change can never silently match old results.
 - Site: GitHub Pages from /docs. Artifact playtest link built from dist/artifact.html.
 - Next: the fort board (season 0 ledger on GitHub: issues = transactions, Actions = validators replaying sieges).
+
+## 2026-11-20 — Prototype 0.3: the season 0 board
+- Board = GitHub issues as transactions, ledger.yml Action as validator, docs/ledger/ledger.json as a hash chain.
+  Entries are immutable (stats are derived, not hashed); the validator verifies the whole chain before appending
+  and fails the run on tampering. Rules: fort must stand + fit budget, no duplicate forts, no copied plans,
+  own-fort sieges recorded but not counted, 3 forts and 30 sieges per user per UTC day.
+- Checked end to end locally: a siege played in the browser and the validator's replay give the same hash.
+- Balance: one flat boulder throw breached Founders' Keep (and several campaign forts) every time. The boulder now
+  launches at 0.72x speed (heavy shot, slower throw). Founders' Keep then took 2-3 shots with varied winning lines.
+  VERSION -> sim-0.3 (results tagged sim-0.2 no longer match by design). Re-solved pars: Iron Gate 2 -> 1.
+- Cross-engine battery at sim-0.3: 800/800 identical in V8, JSC, SpiderMonkey.

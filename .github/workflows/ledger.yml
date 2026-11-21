@@ -1,0 +1,63 @@
+# Season 0 validator. Every issue opened with the "fort" or "siege" label is a transaction:
+# the validator replays it with the game's deterministic core, appends it to docs/ledger/ledger.json,
+# replies on the issue and closes it. Issue text is passed only through environment variables.
+name: ledger
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: write
+  issues: write
+  pages: write
+concurrency:
+  group: ledger
+  cancel-in-progress: false
+jobs:
+  validate:
+    if: contains(github.event.issue.labels.*.name, 'fort') || contains(github.event.issue.labels.*.name, 'siege')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: Install the simulation
+        working-directory: sim
+        run: npm ci --ignore-scripts
+      - name: Replay and record
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_LABELS: ${{ join(github.event.issue.labels.*.name, ',') }}
+          RESULT_FILE: ${{ runner.temp }}/result.md
+          STATUS_FILE: ${{ runner.temp }}/status.txt
+        run: node ledger/validate.js
+      - name: Commit the ledger
+        env:
+          NUM: ${{ github.event.issue.number }}
+        run: |
+          if git diff --quiet -- docs/ledger && [ -z "$(git status --porcelain -- docs/ledger)" ]; then exit 0; fi
+          git config user.name "siegeworks-validator"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/ledger
+          git commit -m "ledger: issue #$NUM"
+          for i in 1 2 3; do git push && exit 0; git pull --rebase; done
+          exit 1
+      - name: Reply and close
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUM: ${{ github.event.issue.number }}
+        run: |
+          status=$(cat "$RUNNER_TEMP/status.txt" 2>/dev/null || echo rejected)
+          [ -s "$RUNNER_TEMP/result.md" ] || echo "**The validator could not finish**, so nothing was recorded." > "$RUNNER_TEMP/result.md"
+          gh issue comment "$NUM" --body-file "$RUNNER_TEMP/result.md"
+          gh issue edit "$NUM" --add-label "$status"
+          if [ "$status" = accepted ]; then gh issue close "$NUM" --reason completed; else gh issue close "$NUM" --reason "not planned"; fi
+      - name: Rebuild the site
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X POST "repos/$GITHUB_REPOSITORY/pages/builds" >/dev/null || true

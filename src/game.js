@@ -11,6 +11,7 @@
   const MATCOL = { w: C.wood, s: C.stone, i: C.iron, h: C.heart };
   const VIEW = { x0: -1, x1: 61, y0: -2.5, y1: 23 };
   const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const SITE = 'https://definitelynotai729-bit.github.io/siege-works/', REPO = 'https://github.com/definitelynotai729-bit/siege-works';
   const cv = $('field'), ctx = cv.getContext('2d');
   let scale = 10, dpr = 1;
 
@@ -50,6 +51,34 @@
   const firstUnbeaten = campaign.findIndex(f => !(st.stars[f.key] > 0));
   st.fortIdx = firstUnbeaten < 0 ? 0 : firstUnbeaten;
   const currentFort = () => st.forts[st.fortIdx];
+  // The season 0 board: docs/ledger/ledger.json, written only by the validator workflow.
+  const board = { state: 'idle', data: null, sel: null };
+  const boardHost = /(^|\.)github\.io$/.test(location.hostname) || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  function loadBoard(force) {
+    if (!boardHost) { board.state = 'unavailable'; renderBoard(); return Promise.resolve(); }
+    if (board.state === 'loading') return board.pending;          // share the request already in flight
+    if (!force && board.state === 'ready') return Promise.resolve();
+    board.state = 'loading'; renderBoard();
+    return board.pending = fetch('ledger/ledger.json?ts=' + Date.now(), { cache: 'no-store' })
+      .then(r => r.status === 404 ? { season: 0, seq: 0, head: '', forts: [], sieges: [], stats: {} } : (r.ok ? r.json() : Promise.reject(r.status)))
+      .then(d => { board.data = d; board.state = 'ready'; if (!board.sel && d.forts.length) board.sel = d.forts[d.forts.length - 1].id; renderBoard(); })
+      .catch(() => { board.state = 'error'; renderBoard(); });
+  }
+  const boardFort = (id) => board.data && board.data.forts.find(f => f.id === id);
+  function boardStats(id) { return (board.data && board.data.stats && board.data.stats[id]) || { sieges: 0, breaches: 0, best: null }; }
+  function siegeBoardFort(id) {
+    const bf = boardFort(id); if (!bf) return false;
+    let idx = st.forts.findIndex(f => f.kind === 'board' && f.id === id);
+    if (idx < 0) {
+      const d = S.decodeFort(bf.code);
+      st.forts.push({ name: bf.name, pieces: d.pieces, kind: 'board', id, builder: bf.builder, loadout: S.DEFAULT_LOADOUT, par: null, key: null, blurb: 'Built by @' + bf.builder + '.' });
+      idx = st.forts.length - 1;
+    }
+    st.fortIdx = idx; st.replayOf = null; setMode('siege'); startSiege();
+    return true;
+  }
+  const issueUrl = (template, fields, title) => REPO + '/issues/new?template=' + template + '&title=' + encodeURIComponent(title) +
+    Object.keys(fields).map(k => '&' + k + '=' + encodeURIComponent(fields[k])).join('');
   function addCustomFort(name, pieces) {
     const code = S.encodeFort(name, pieces);
     let idx = st.forts.findIndex(x => x.kind === 'custom' && S.encodeFort(x.name, x.pieces) === code);
@@ -79,7 +108,19 @@
         <span class="blurb">Wood is cheap, stone is solid, iron is nearly unbreakable. Fire pots burn wood.</span>`;
       return;
     }
+    if (st.mode === 'board') {
+      const d = board.data;
+      card.innerHTML = `<span class="eyebrow">Season 0 board</span><span class="name">Forts by players</span><span class="meta">${d ? plural(d.forts.length, 'fort') + ' · ' + plural(d.sieges.length, 'siege') : ''}</span>
+        <span class="blurb">Every fort and siege here was replayed and verified by the validator before it was recorded.</span>`;
+      return;
+    }
     const f = currentFort();
+    if (f.kind === 'board') {
+      const s = boardStats(f.id);
+      card.innerHTML = `<span class="eyebrow">Season 0 board · ${f.id}</span><span class="name">${escapeHtml(f.name)}</span><span class="meta">${plural(s.sieges, 'siege')} · ${plural(s.breaches, 'breach', 'breaches')}</span>
+        <span class="blurb">Built by @${escapeHtml(f.builder)}. ${s.best ? 'Record: ' + plural(s.best.shots, 'shot') + ' by @' + escapeHtml(s.best.by) + '.' : 'Nobody has breached it yet.'}</span><span class="meta">${loadoutText(f.loadout)}</span>`;
+      return;
+    }
     if (f.kind === 'campaign') {
       const best = st.stars[f.key] || 0;
       card.innerHTML = `<span class="eyebrow">Proving Grounds · Fort ${f.num} of ${campaign.length}</span><span class="name">${escapeHtml(f.name)}</span>
@@ -164,10 +205,13 @@
       replayLine = `<dt>Replay check</dt><dd class="${same ? 'match' : 'mismatch'}">${same ? 'Match. The replay reached the identical state ' + r.hash : 'Mismatch: ' + st.replayOf.hash + ' vs ' + r.hash}</dd>`;
     }
     const next = f.kind === 'campaign' && breached && f.num < campaign.length;
+    const submit = f.kind === 'board' && !st.readonly && r.outcome !== 'collapsed'
+      ? issueUrl('siege.yml', { fort_id: f.id, plan_code: r.code }, 'Siege: ' + f.id + (breached ? ' in ' + plural(r.shots, 'shot') : ' (held)')) : null;
     box.hidden = false;
     box.innerHTML = `<div class="result ${r.outcome}">
       <h2>${escapeHtml(title)}${r.stars ? `<span class="stars" aria-label="${r.stars} of 3 stars">${starText(r.stars)}</span>` : ''}</h2>
       ${sub ? `<p class="sub">${escapeHtml(sub)}</p>` : ''}
+      ${submit ? '<p class="sub">Submitting opens a GitHub issue with your plan filled in. The validator replays it, records it and replies within a few minutes.</p>' : ''}
       <dl class="kv">
         <dt>Fort</dt><dd>${escapeHtml(f.name)} · ${f.pieces.length} pieces · ${S.fortCost(f.pieces)} gold</dd>
         <dt>Blocks destroyed</dt><dd>${r.destroyed} of ${f.pieces.length}</dd>
@@ -178,8 +222,9 @@
       </dl>
       <div class="row">
         ${next ? '<button class="act" id="next-fort">Next fort</button>' : ''}
+        ${submit ? `<a class="act" href="${escapeHtml(submit)}" target="_blank" rel="noopener">Submit to the board</a>` : ''}
         ${bot ? '<button class="act" id="back-build">Back to building</button>' : ''}
-        <button class="act ${next || bot ? 'ghost' : ''}" id="replay">Replay this siege</button>
+        <button class="act ${next || bot || submit ? 'ghost' : ''}" id="replay">Replay this siege</button>
         <button class="act ghost" id="copy-plan">Copy siege plan</button>
         <button class="act ghost" id="again">${bot ? 'Siege it yourself' : 'Try again'}</button>
       </div>
@@ -285,12 +330,34 @@
     }
   }
 
+  function renderBoard() {
+    const el = $('board-tray'); if (!el || st.mode !== 'board') { renderCard(); return; }
+    renderCard();
+    if (board.state === 'unavailable') {
+      el.innerHTML = `<span class="label">Season 0 board</span><p class="empty">The board lives on the public site. <a class="act" href="${SITE}#board" target="_blank" rel="noopener">Open the board</a></p>`;
+      return;
+    }
+    if (board.state !== 'ready') { el.innerHTML = `<span class="label">Season 0 board</span><p class="empty">${board.state === 'error' ? 'The board could not be loaded. <button class="act ghost" id="board-refresh">Try again</button>' : 'Loading the board…'}</p>`; return; }
+    const d = board.data;
+    const rows = d.forts.slice().reverse().map(f => {
+      const s = boardStats(f.id);
+      return `<tr data-id="${f.id}" aria-selected="${board.sel === f.id}"><td><span class="fid">${f.id}</span>${escapeHtml(f.name)}</td><td>@${escapeHtml(f.builder)}</td>
+        <td class="num">${s.sieges}</td><td class="num">${s.breaches}</td><td>${s.best ? plural(s.best.shots, 'shot') + ' · @' + escapeHtml(s.best.by) : 'unbroken'}</td>
+        <td><button class="act" data-siege="${f.id}">Siege</button></td></tr>`;
+    }).join('');
+    el.innerHTML = `<span class="label">Season 0 board</span>
+      <p class="board-head">${plural(d.forts.length, 'fort')} · ${plural(d.sieges.length, 'verified siege')} · ledger entry <b>${d.seq}</b>${d.head ? ' · head <b>' + d.head.slice(0, 12) + '</b>' : ''} · <button class="act ghost" id="board-refresh">Refresh</button></p>
+      ${d.forts.length ? `<div class="table-wrap"><table class="board"><thead><tr><th>Fort</th><th>Builder</th><th class="num">Sieges</th><th class="num">Breached</th><th>Record</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`
+        : '<p class="empty">No forts yet. Build one, then press Post to the board.</p>'}
+      <p class="hint">Posting a fort or a siege opens a GitHub issue (you need a GitHub account). A validator replays it with the same physics your browser runs, records it in a hash-chained ledger and replies on the issue. Fewest shots holds a fort's record; sieges on your own fort don't count.</p>`;
+  }
+
   // ------------------------------------------------------------------ mode
   function setMode(m) {
     st.mode = m;
-    $('tab-siege').setAttribute('aria-selected', m === 'siege'); $('tab-build').setAttribute('aria-selected', m === 'build');
-    $('siege-tray').hidden = m !== 'siege'; $('build-tray').hidden = m !== 'build';
-    if (m === 'build') renderBuildUI(); else renderSiegeUI();
+    $('tab-siege').setAttribute('aria-selected', m === 'siege'); $('tab-build').setAttribute('aria-selected', m === 'build'); $('tab-board').setAttribute('aria-selected', m === 'board');
+    $('siege-tray').hidden = m !== 'siege'; $('build-tray').hidden = m !== 'build'; $('board-tray').hidden = m !== 'board';
+    if (m === 'build') renderBuildUI(); else if (m === 'board') { renderBoard(); loadBoard(); } else renderSiegeUI();
     renderResult(); // hides the result card outside siege mode
     renderCard();
   }
@@ -333,6 +400,18 @@
   $('ammo').onclick = (e) => { const b = e.target.closest('[data-ammo]'); if (b && !b.disabled) { st.ammoSel = b.dataset.ammo; renderSiegeUI(); } };
   $('tab-siege').onclick = () => { if (!st.job) setMode('siege'); };
   $('tab-build').onclick = () => { if (!st.job) setMode('build'); };
+  $('tab-board').onclick = () => { if (!st.job) setMode('board'); };
+  $('post-fort').onclick = (e) => {
+    if (st.job || !validateDraft()) { e.preventDefault(); return; }
+    $('post-fort').href = issueUrl('fort.yml', { fort_code: S.encodeFort(st.build.name, st.build.pieces) }, 'Fort: ' + S.cleanName(st.build.name));
+  };
+  $('board-tray').onclick = (e) => {
+    const go = e.target.closest('[data-siege]');
+    if (go) { siegeBoardFort(go.dataset.siege); return; }
+    if (e.target.closest('#board-refresh')) { loadBoard(true); return; }
+    const row = e.target.closest('tr[data-id]');
+    if (row) { board.sel = row.dataset.id; renderBoard(); }
+  };
   $('sound').onclick = () => { AU.setMuted(!AU.isMuted()); syncSound(); };
   function syncSound() { const on = !AU.isMuted(); $('sound').textContent = on ? 'Sound on' : 'Sound off'; $('sound').setAttribute('aria-pressed', on); }
   $('mats').onclick = (e) => {
@@ -463,6 +542,14 @@
       if (st.job) drawJob(W, H);
       return;
     }
+    if (st.mode === 'board') {
+      const bf = board.sel && boardFort(board.sel);
+      if (bf) {
+        try { S.decodeFort(bf.code).pieces.forEach(p => { const [w, h] = S.SHAPE[p.s]; drawBlock(p.m, (p.x + w / 2) * G, (p.y + h / 2) * G, w * G, h * G, 0, 0); }); } catch (e) {}
+        banner(bf.id + ' · ' + bf.name.toUpperCase());
+      } else banner('SEASON 0 BOARD');
+      return;
+    }
     const sim = st.sim; if (!sim) return;
     drawTrails(sim);
     for (const b of sim.blocks) { if (!b.alive) continue; const p = b.body.getPosition(); drawBlock(b.mat, p.x, p.y, b.w, b.h, b.body.getAngle(), Math.min(1, b.dmg / b.hp)); }
@@ -575,7 +662,7 @@
     pumpJob();
     if (st.mode === 'siege') tickSim(dt);
     draw(dt);
-    const name = st.mode === 'build' ? (st.build.name || 'My Fort') : currentFort().name;
+    const name = st.mode === 'build' ? (st.build.name || 'My Fort') : st.mode === 'board' ? 'Season 0 board' : currentFort().name;
     $('titleblock').innerHTML = `<b>${escapeHtml(name)}</b><br>${st.mode === 'siege' && st.sim ? 'tick ' + st.sim.tick : 'grid 0.5 m'} · ${S.VERSION}`;
     requestAnimationFrame(frame);
   }
@@ -583,5 +670,13 @@
   window.addEventListener('resize', resize);
   $('simver').textContent = S.VERSION;
   resize(); syncAimOut(); syncSound(); startSiege(); setMode('siege');
+  // Links: #board opens the board, #F12 opens a siege on board fort F12.
+  function route() {
+    const h = location.hash.slice(1);
+    if (h === 'board') setMode('board');
+    else if (/^F\d{1,6}$/.test(h)) { setMode('board'); loadBoard().then(() => { if (!siegeBoardFort(h)) toast('There is no fort ' + h + ' on the board yet.'); }); }
+  }
+  route();
+  window.addEventListener('hashchange', route);
   requestAnimationFrame(frame);
 })();

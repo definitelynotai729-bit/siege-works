@@ -3,7 +3,7 @@
 // Fixed 1/60 s timestep; every shot is keyed to a tick so a siege replays exactly.
 // Load detmath.js and call SWDetMath.install() BEFORE planck.js, or results differ between browsers.
 (function (root) {
-  const VERSION = 'sim-0.2';           // part of every result hash: a physics change must never silently match
+  const VERSION = 'sim-0.3';           // part of every result hash: a physics change must never silently match
   const DT = 1 / 60;
   const GRID = 0.5;                    // metres per build-grid cell
   const ZONE = { x0: 60, x1: 112, y1: 36 }; // build zone in grid cells (30..56 m wide, 18 m tall)
@@ -22,9 +22,9 @@
   // shape -> [width, height] in grid cells
   const SHAPE = { S: [2, 2], H: [4, 1], V: [1, 4], L: [6, 1] };
   const AMMO = {
-    stone:   { name: 'Stone shot', r: 0.35, density: 9 },
-    boulder: { name: 'Boulder',    r: 0.62, density: 7 },
-    pot:     { name: 'Fire pot',   r: 0.4,  density: 3, blast: 3.5, power: 900, burn: { w: 1, s: 0.25, i: 0.08, h: 0.04 } }, // burns wood, barely scorches stone
+    stone:   { name: 'Stone shot', r: 0.35, density: 9, speed: 1 },
+    boulder: { name: 'Boulder',    r: 0.62, density: 7, speed: 0.72 }, // heavy: the trebuchet throws it slower
+    pot:     { name: 'Fire pot',   r: 0.4,  density: 3, speed: 1, blast: 3.5, power: 900, burn: { w: 1, s: 0.25, i: 0.08, h: 0.04 } }, // burns wood, barely scorches stone
   };
   const DEFAULT_LOADOUT = { stone: 3, boulder: 1, pot: 1 };
   const MIN_HIT = 2.2; // m/s approach speed below which contacts do no damage (resting loads never hurt)
@@ -167,7 +167,7 @@
       if (!AMMO[s.type] || sim.tick < SETTLE || (sim.ammo[s.type] || 0) <= 0) { s.rejected = true; return; }
       sim.ammo[s.type]--;
       const A = AMMO[s.type];
-      const rad = s.a * Math.PI / 180, v = Math.max(0.05, Math.min(1, s.p)) * MAXV;
+      const rad = s.a * Math.PI / 180, v = Math.max(0.05, Math.min(1, s.p)) * MAXV * A.speed;
       const body = world.createBody({ type: 'dynamic', bullet: true, position: pl.Vec2(LAUNCH.x, LAUNCH.y) });
       body.createFixture(pl.Circle(A.r), { density: A.density, friction: 0.5, restitution: 0.1 });
       body.setLinearVelocity(pl.Vec2(Math.cos(rad) * v, Math.sin(rad) * v));
@@ -316,7 +316,7 @@
       for (let y = 0; y < 6; y += 2) { P.push({ m: 's', s: 'S', x: 90, y }); P.push({ m: 's', s: 'S', x: 96, y }); }
       P.push({ m: 's', s: 'L', x: 90, y: 6 }); P.push({ m: 'w', s: 'H', x: 92, y: 7 });
       P.push({ m: 'h', s: 'S', x: 93, y: 0 }); P.push({ m: 'h', s: 'S', x: 93, y: 8 });
-      add('Iron Gate', 'An iron pillar guards the approach.', DEFAULT_LOADOUT, 2, P);
+      add('Iron Gate', 'An iron pillar guards the approach.', DEFAULT_LOADOUT, 1, P);
     }
     { // 7
       const P = [];

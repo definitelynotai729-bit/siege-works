@@ -1,0 +1,24 @@
+name: Submit a siege
+description: Submit a siege plan against a board fort. The validator replays it and records the result.
+title: "Siege: "
+labels: ["siege"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The game fills this in when you press **Submit to the board** after sieging a board fort.
+        A GitHub Action replays your plan with the same physics your browser ran, records the result and replies here. Fewest shots holds the record.
+  - type: input
+    id: fort_id
+    attributes:
+      label: Fort ID
+      placeholder: F1
+    validations:
+      required: true
+  - type: input
+    id: plan_code
+    attributes:
+      label: Siege plan
+      placeholder: SP1.s2i~5k~jw
+    validations:
+      required: true

@@ -4,14 +4,16 @@
 
 A physics siege game. Build a fort, share its code, and watch other people try to bring it down.
 
-This is **prototype 0.2**. It tests one question: is the core loop fun? The long-term goal is a persistent world that players own, run on its own proof-of-stake chain. There, forts are owned objects, sieges are transactions, and validators agree on every outcome by replaying the physics. None of the chain exists yet. The game has to be fun first.
+This is **prototype 0.3**. It tests one question: is the core loop fun? The long-term goal is a persistent world that players own, run on its own proof-of-stake chain. There, forts are owned objects, sieges are transactions, and validators agree on every outcome by replaying the physics. None of the chain exists yet. The game has to be fun first.
 
-## What's in 0.2
+## What's in it
+
+- **Season 0 board:** post forts and sieges as GitHub issues. A validator (a GitHub Action) replays each one with the same deterministic physics your browser ran, appends it to a hash-chained ledger in `docs/ledger/`, and replies on the issue. Fewest shots holds a fort's record. It is a working miniature of the chain design.
 
 - **Proving Grounds:** eight forts with par scores and stars. A search bot breached every one, so each is beatable, and its fewest-shot line sets the par.
 - **Builder:** spend 800 gold on wood, stone and iron. A fort must stand on its own before you can share it.
 - **Bot siege:** a search bot simulates about 200 shots against your fort, then replays its best attack.
-- **Materials matter:** fire pots burn wood but barely scorch stone or iron. Boulders are heavy and you only get one.
+- **Materials matter:** fire pots burn wood but barely scorch stone or iron. Boulders hit hardest but the trebuchet throws them slower, and you only get one.
 - **Share codes:** fort codes (`SW1.…`) and siege plans (`SP1.…`) are short strings you can paste anywhere.
 - **Same result in every browser:** see below.
 
@@ -41,9 +43,13 @@ sim/detmath.js           deterministic sin/cos/atan2 (load before planck.js)
 sim/test.js              headless test suite
 sim/solve.js             offline solver: proves forts are breachable and sets par
 sim/crossengine/         determinism battery across V8, JavaScriptCore and SpiderMonkey
+ledger/validate.js       the season 0 validator run by .github/workflows/ledger.yml
+ledger/test.js           validator tests: acceptance, rejections, rate limits, chain tampering
+docs/ledger/ledger.json  the ledger itself (written only by the validator)
 src/page.html, src/*.js  page, sound and game UI
 build.py                 builds docs/index.html (the site) and dist/artifact.html
 tools/qa.py              plays the built page in Chromium, WebKit and Firefox
+tools/qa_board.py        board, deep links and submit links against a local server
 tools/og_image.py        renders the link-preview image from a real game frame
 NOTES.md                 design log
 ```
@@ -52,6 +58,7 @@ NOTES.md                 design log
 
 ```sh
 cd sim && npm install && npm test        # rules, validation, replay determinism
+node ledger/test.js                      # validator
 node solve.js                            # re-derive campaign pars after any physics change
 cd .. && python3 build.py                # rebuild docs/index.html
 python3 tools/qa.py                      # browser checks (needs Playwright)
@@ -60,6 +67,6 @@ python3 sim/crossengine/run_all.py 200   # cross-engine determinism battery
 
 ## Feedback
 
-Open an issue with what felt good, what felt wrong, and any fort codes or siege plans that show it.
+Open a [playtest feedback issue](https://github.com/definitelynotai729-bit/siege-works/issues/new?template=feedback.yml) with what felt good, what felt wrong, and any fort codes or siege plans that show it.
 
 Built by a human and an AI (Claude) working together.

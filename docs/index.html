@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta property="og:title" content="Siegeworks">
-<meta property="og:description" content="Build a fort, share its code, and siege other people's forts. A deterministic physics siege game, prototype 0.2.">
+<meta property="og:description" content="Build a fort, share its code, and siege other people's forts. A deterministic physics siege game with a player-run fort board.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://definitelynotai729-bit.github.io/siege-works/">
 <meta property="og:image" content="https://definitelynotai729-bit.github.io/siege-works/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%230e3358'/%3E%3Cpath d='M8 2l5 6-5 6-5-6z' fill='%23ff5a6a'/%3E%3C/svg%3E">
 <title>Siegeworks</title>
-<meta name="description" content="Build a fort, share its code, and siege other people's forts. A deterministic physics siege game, prototype 0.2.">
+<meta name="description" content="Build a fort, share its code, and siege other people's forts. A deterministic physics siege game with a player-run fort board.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=IBM+Plex+Sans+Condensed:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -66,6 +66,19 @@ button.chip[aria-pressed="true"] { border-color: var(--pencil); box-shadow: inse
 button.chip:disabled, button.act:disabled { opacity: 0.4; cursor: not-allowed; }
 button.act { background: var(--pencil); color: var(--sheet-deep); border-color: var(--pencil); font-weight: 600; }
 button.act.ghost { background: none; color: var(--chalk); border-color: var(--rule); font-weight: 500; }
+a.act { font: 600 14px var(--body); color: var(--sheet-deep); background: var(--pencil); border: 1px solid var(--pencil); padding: 6px 12px; text-decoration: none; display: inline-flex; align-items: center; }
+a.act.ghost { background: none; color: var(--chalk); border-color: var(--rule); font-weight: 500; }
+.board-head { font: 12px var(--mono); color: var(--chalk-dim); margin: 0; }
+.board-head b { color: var(--chalk); font-weight: 500; }
+.table-wrap { overflow-x: auto; max-width: 100%; border: 1px solid var(--rule); }
+table.board { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
+table.board th { font: 500 11px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--chalk-dim); text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.board td { padding: 7px 10px; border-bottom: 1px solid color-mix(in srgb, var(--rule) 45%, transparent); white-space: nowrap; }
+table.board tr[data-id] { cursor: pointer; }
+table.board tr[aria-selected="true"] td { background: color-mix(in srgb, var(--pencil) 12%, transparent); }
+table.board td.num, table.board th.num { text-align: right; }
+table.board .fid { font: 500 12px var(--mono); color: var(--pencil); margin-right: 6px; }
+.empty { margin: 0; padding: 18px 12px; color: var(--chalk-dim); }
 button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px solid var(--pencil); outline-offset: 2px; }
 .swatch { width: 12px; height: 12px; border: 1px solid var(--chalk); display: inline-block; }
 .count { font: 500 12px var(--mono); color: var(--pencil); }
@@ -114,7 +127,7 @@ footer a { color: var(--chalk); }
 <body>
 <div class="wrap">
   <header>
-    <h1>Siegeworks <small>PROTOTYPE 0.2</small></h1>
+    <h1>Siegeworks <small>PROTOTYPE 0.3</small></h1>
     <p class="tag">Build a fort and share its code. Someone else lays siege. Every siege replays to the same result in any browser, which is how validators will check it later.</p>
     <button class="act ghost" id="sound" aria-pressed="true">Sound on</button>
   </header>
@@ -123,6 +136,7 @@ footer a { color: var(--chalk); }
     <div class="tabs" role="tablist" aria-label="Mode">
       <button class="tab" role="tab" id="tab-siege" aria-selected="true">Siege</button>
       <button class="tab" role="tab" id="tab-build" aria-selected="false">Build</button>
+      <button class="tab" role="tab" id="tab-board" aria-selected="false">Board</button>
     </div>
     <div class="card" id="fort-card" aria-live="polite"></div>
   </div>
@@ -183,6 +197,7 @@ footer a { color: var(--chalk); }
         <button class="act" id="test-fort">Siege it</button>
         <button class="act ghost" id="bot-fort">Bot siege</button>
         <button class="act ghost" id="copy-fort">Copy fort code</button>
+        <a class="act ghost" id="post-fort" href="#" target="_blank" rel="noopener">Post to the board</a>
       </div>
     </div>
     <div class="group">
@@ -193,8 +208,11 @@ footer a { color: var(--chalk); }
       </div>
     </div>
     <p class="check" id="check" aria-live="polite"></p>
-    <p class="hint">Click inside the dashed zone to place a piece. Right-click or Erase removes one. Every fort needs at least one heart, and it must stand on its own. Bot siege sends a search bot after your fort and replays its best attack.</p>
+    <p class="hint">Click inside the dashed zone to place a piece. Right-click or Erase removes one. Every fort needs at least one heart, and it must stand on its own. Bot siege sends a search bot after your fort and replays its best attack. Post to the board opens a GitHub issue that the validator replays.</p>
   </section>
+
+  <!-- BOARD TRAY -->
+  <section class="group" id="board-tray" hidden></section>
 
   <section class="group">
     <span class="label">Load a fort code or a siege plan</span>
@@ -354,7 +372,7 @@ SWDetMath.install();
 // Fixed 1/60 s timestep; every shot is keyed to a tick so a siege replays exactly.
 // Load detmath.js and call SWDetMath.install() BEFORE planck.js, or results differ between browsers.
 (function (root) {
-  const VERSION = 'sim-0.2';           // part of every result hash: a physics change must never silently match
+  const VERSION = 'sim-0.3';           // part of every result hash: a physics change must never silently match
   const DT = 1 / 60;
   const GRID = 0.5;                    // metres per build-grid cell
   const ZONE = { x0: 60, x1: 112, y1: 36 }; // build zone in grid cells (30..56 m wide, 18 m tall)
@@ -373,9 +391,9 @@ SWDetMath.install();
   // shape -> [width, height] in grid cells
   const SHAPE = { S: [2, 2], H: [4, 1], V: [1, 4], L: [6, 1] };
   const AMMO = {
-    stone:   { name: 'Stone shot', r: 0.35, density: 9 },
-    boulder: { name: 'Boulder',    r: 0.62, density: 7 },
-    pot:     { name: 'Fire pot',   r: 0.4,  density: 3, blast: 3.5, power: 900, burn: { w: 1, s: 0.25, i: 0.08, h: 0.04 } }, // burns wood, barely scorches stone
+    stone:   { name: 'Stone shot', r: 0.35, density: 9, speed: 1 },
+    boulder: { name: 'Boulder',    r: 0.62, density: 7, speed: 0.72 }, // heavy: the trebuchet throws it slower
+    pot:     { name: 'Fire pot',   r: 0.4,  density: 3, speed: 1, blast: 3.5, power: 900, burn: { w: 1, s: 0.25, i: 0.08, h: 0.04 } }, // burns wood, barely scorches stone
   };
   const DEFAULT_LOADOUT = { stone: 3, boulder: 1, pot: 1 };
   const MIN_HIT = 2.2; // m/s approach speed below which contacts do no damage (resting loads never hurt)
@@ -518,7 +536,7 @@ SWDetMath.install();
       if (!AMMO[s.type] || sim.tick < SETTLE || (sim.ammo[s.type] || 0) <= 0) { s.rejected = true; return; }
       sim.ammo[s.type]--;
       const A = AMMO[s.type];
-      const rad = s.a * Math.PI / 180, v = Math.max(0.05, Math.min(1, s.p)) * MAXV;
+      const rad = s.a * Math.PI / 180, v = Math.max(0.05, Math.min(1, s.p)) * MAXV * A.speed;
       const body = world.createBody({ type: 'dynamic', bullet: true, position: pl.Vec2(LAUNCH.x, LAUNCH.y) });
       body.createFixture(pl.Circle(A.r), { density: A.density, friction: 0.5, restitution: 0.1 });
       body.setLinearVelocity(pl.Vec2(Math.cos(rad) * v, Math.sin(rad) * v));
@@ -667,7 +685,7 @@ SWDetMath.install();
       for (let y = 0; y < 6; y += 2) { P.push({ m: 's', s: 'S', x: 90, y }); P.push({ m: 's', s: 'S', x: 96, y }); }
       P.push({ m: 's', s: 'L', x: 90, y: 6 }); P.push({ m: 'w', s: 'H', x: 92, y: 7 });
       P.push({ m: 'h', s: 'S', x: 93, y: 0 }); P.push({ m: 'h', s: 'S', x: 93, y: 8 });
-      add('Iron Gate', 'An iron pillar guards the approach.', DEFAULT_LOADOUT, 2, P);
+      add('Iron Gate', 'An iron pillar guards the approach.', DEFAULT_LOADOUT, 1, P);
     }
     { // 7
       const P = [];
@@ -801,6 +819,7 @@ SWDetMath.install();
   const MATCOL = { w: C.wood, s: C.stone, i: C.iron, h: C.heart };
   const VIEW = { x0: -1, x1: 61, y0: -2.5, y1: 23 };
   const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const SITE = 'https://definitelynotai729-bit.github.io/siege-works/', REPO = 'https://github.com/definitelynotai729-bit/siege-works';
   const cv = $('field'), ctx = cv.getContext('2d');
   let scale = 10, dpr = 1;
 
@@ -840,6 +859,34 @@ SWDetMath.install();
   const firstUnbeaten = campaign.findIndex(f => !(st.stars[f.key] > 0));
   st.fortIdx = firstUnbeaten < 0 ? 0 : firstUnbeaten;
   const currentFort = () => st.forts[st.fortIdx];
+  // The season 0 board: docs/ledger/ledger.json, written only by the validator workflow.
+  const board = { state: 'idle', data: null, sel: null };
+  const boardHost = /(^|\.)github\.io$/.test(location.hostname) || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  function loadBoard(force) {
+    if (!boardHost) { board.state = 'unavailable'; renderBoard(); return Promise.resolve(); }
+    if (board.state === 'loading') return board.pending;          // share the request already in flight
+    if (!force && board.state === 'ready') return Promise.resolve();
+    board.state = 'loading'; renderBoard();
+    return board.pending = fetch('ledger/ledger.json?ts=' + Date.now(), { cache: 'no-store' })
+      .then(r => r.status === 404 ? { season: 0, seq: 0, head: '', forts: [], sieges: [], stats: {} } : (r.ok ? r.json() : Promise.reject(r.status)))
+      .then(d => { board.data = d; board.state = 'ready'; if (!board.sel && d.forts.length) board.sel = d.forts[d.forts.length - 1].id; renderBoard(); })
+      .catch(() => { board.state = 'error'; renderBoard(); });
+  }
+  const boardFort = (id) => board.data && board.data.forts.find(f => f.id === id);
+  function boardStats(id) { return (board.data && board.data.stats && board.data.stats[id]) || { sieges: 0, breaches: 0, best: null }; }
+  function siegeBoardFort(id) {
+    const bf = boardFort(id); if (!bf) return false;
+    let idx = st.forts.findIndex(f => f.kind === 'board' && f.id === id);
+    if (idx < 0) {
+      const d = S.decodeFort(bf.code);
+      st.forts.push({ name: bf.name, pieces: d.pieces, kind: 'board', id, builder: bf.builder, loadout: S.DEFAULT_LOADOUT, par: null, key: null, blurb: 'Built by @' + bf.builder + '.' });
+      idx = st.forts.length - 1;
+    }
+    st.fortIdx = idx; st.replayOf = null; setMode('siege'); startSiege();
+    return true;
+  }
+  const issueUrl = (template, fields, title) => REPO + '/issues/new?template=' + template + '&title=' + encodeURIComponent(title) +
+    Object.keys(fields).map(k => '&' + k + '=' + encodeURIComponent(fields[k])).join('');
   function addCustomFort(name, pieces) {
     const code = S.encodeFort(name, pieces);
     let idx = st.forts.findIndex(x => x.kind === 'custom' && S.encodeFort(x.name, x.pieces) === code);
@@ -869,7 +916,19 @@ SWDetMath.install();
         <span class="blurb">Wood is cheap, stone is solid, iron is nearly unbreakable. Fire pots burn wood.</span>`;
       return;
     }
+    if (st.mode === 'board') {
+      const d = board.data;
+      card.innerHTML = `<span class="eyebrow">Season 0 board</span><span class="name">Forts by players</span><span class="meta">${d ? plural(d.forts.length, 'fort') + ' · ' + plural(d.sieges.length, 'siege') : ''}</span>
+        <span class="blurb">Every fort and siege here was replayed and verified by the validator before it was recorded.</span>`;
+      return;
+    }
     const f = currentFort();
+    if (f.kind === 'board') {
+      const s = boardStats(f.id);
+      card.innerHTML = `<span class="eyebrow">Season 0 board · ${f.id}</span><span class="name">${escapeHtml(f.name)}</span><span class="meta">${plural(s.sieges, 'siege')} · ${plural(s.breaches, 'breach', 'breaches')}</span>
+        <span class="blurb">Built by @${escapeHtml(f.builder)}. ${s.best ? 'Record: ' + plural(s.best.shots, 'shot') + ' by @' + escapeHtml(s.best.by) + '.' : 'Nobody has breached it yet.'}</span><span class="meta">${loadoutText(f.loadout)}</span>`;
+      return;
+    }
     if (f.kind === 'campaign') {
       const best = st.stars[f.key] || 0;
       card.innerHTML = `<span class="eyebrow">Proving Grounds · Fort ${f.num} of ${campaign.length}</span><span class="name">${escapeHtml(f.name)}</span>
@@ -954,10 +1013,13 @@ SWDetMath.install();
       replayLine = `<dt>Replay check</dt><dd class="${same ? 'match' : 'mismatch'}">${same ? 'Match. The replay reached the identical state ' + r.hash : 'Mismatch: ' + st.replayOf.hash + ' vs ' + r.hash}</dd>`;
     }
     const next = f.kind === 'campaign' && breached && f.num < campaign.length;
+    const submit = f.kind === 'board' && !st.readonly && r.outcome !== 'collapsed'
+      ? issueUrl('siege.yml', { fort_id: f.id, plan_code: r.code }, 'Siege: ' + f.id + (breached ? ' in ' + plural(r.shots, 'shot') : ' (held)')) : null;
     box.hidden = false;
     box.innerHTML = `<div class="result ${r.outcome}">
       <h2>${escapeHtml(title)}${r.stars ? `<span class="stars" aria-label="${r.stars} of 3 stars">${starText(r.stars)}</span>` : ''}</h2>
       ${sub ? `<p class="sub">${escapeHtml(sub)}</p>` : ''}
+      ${submit ? '<p class="sub">Submitting opens a GitHub issue with your plan filled in. The validator replays it, records it and replies within a few minutes.</p>' : ''}
       <dl class="kv">
         <dt>Fort</dt><dd>${escapeHtml(f.name)} · ${f.pieces.length} pieces · ${S.fortCost(f.pieces)} gold</dd>
         <dt>Blocks destroyed</dt><dd>${r.destroyed} of ${f.pieces.length}</dd>
@@ -968,8 +1030,9 @@ SWDetMath.install();
       </dl>
       <div class="row">
         ${next ? '<button class="act" id="next-fort">Next fort</button>' : ''}
+        ${submit ? `<a class="act" href="${escapeHtml(submit)}" target="_blank" rel="noopener">Submit to the board</a>` : ''}
         ${bot ? '<button class="act" id="back-build">Back to building</button>' : ''}
-        <button class="act ${next || bot ? 'ghost' : ''}" id="replay">Replay this siege</button>
+        <button class="act ${next || bot || submit ? 'ghost' : ''}" id="replay">Replay this siege</button>
         <button class="act ghost" id="copy-plan">Copy siege plan</button>
         <button class="act ghost" id="again">${bot ? 'Siege it yourself' : 'Try again'}</button>
       </div>
@@ -1075,12 +1138,34 @@ SWDetMath.install();
     }
   }
 
+  function renderBoard() {
+    const el = $('board-tray'); if (!el || st.mode !== 'board') { renderCard(); return; }
+    renderCard();
+    if (board.state === 'unavailable') {
+      el.innerHTML = `<span class="label">Season 0 board</span><p class="empty">The board lives on the public site. <a class="act" href="${SITE}#board" target="_blank" rel="noopener">Open the board</a></p>`;
+      return;
+    }
+    if (board.state !== 'ready') { el.innerHTML = `<span class="label">Season 0 board</span><p class="empty">${board.state === 'error' ? 'The board could not be loaded. <button class="act ghost" id="board-refresh">Try again</button>' : 'Loading the board…'}</p>`; return; }
+    const d = board.data;
+    const rows = d.forts.slice().reverse().map(f => {
+      const s = boardStats(f.id);
+      return `<tr data-id="${f.id}" aria-selected="${board.sel === f.id}"><td><span class="fid">${f.id}</span>${escapeHtml(f.name)}</td><td>@${escapeHtml(f.builder)}</td>
+        <td class="num">${s.sieges}</td><td class="num">${s.breaches}</td><td>${s.best ? plural(s.best.shots, 'shot') + ' · @' + escapeHtml(s.best.by) : 'unbroken'}</td>
+        <td><button class="act" data-siege="${f.id}">Siege</button></td></tr>`;
+    }).join('');
+    el.innerHTML = `<span class="label">Season 0 board</span>
+      <p class="board-head">${plural(d.forts.length, 'fort')} · ${plural(d.sieges.length, 'verified siege')} · ledger entry <b>${d.seq}</b>${d.head ? ' · head <b>' + d.head.slice(0, 12) + '</b>' : ''} · <button class="act ghost" id="board-refresh">Refresh</button></p>
+      ${d.forts.length ? `<div class="table-wrap"><table class="board"><thead><tr><th>Fort</th><th>Builder</th><th class="num">Sieges</th><th class="num">Breached</th><th>Record</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`
+        : '<p class="empty">No forts yet. Build one, then press Post to the board.</p>'}
+      <p class="hint">Posting a fort or a siege opens a GitHub issue (you need a GitHub account). A validator replays it with the same physics your browser runs, records it in a hash-chained ledger and replies on the issue. Fewest shots holds a fort's record; sieges on your own fort don't count.</p>`;
+  }
+
   // ------------------------------------------------------------------ mode
   function setMode(m) {
     st.mode = m;
-    $('tab-siege').setAttribute('aria-selected', m === 'siege'); $('tab-build').setAttribute('aria-selected', m === 'build');
-    $('siege-tray').hidden = m !== 'siege'; $('build-tray').hidden = m !== 'build';
-    if (m === 'build') renderBuildUI(); else renderSiegeUI();
+    $('tab-siege').setAttribute('aria-selected', m === 'siege'); $('tab-build').setAttribute('aria-selected', m === 'build'); $('tab-board').setAttribute('aria-selected', m === 'board');
+    $('siege-tray').hidden = m !== 'siege'; $('build-tray').hidden = m !== 'build'; $('board-tray').hidden = m !== 'board';
+    if (m === 'build') renderBuildUI(); else if (m === 'board') { renderBoard(); loadBoard(); } else renderSiegeUI();
     renderResult(); // hides the result card outside siege mode
     renderCard();
   }
@@ -1123,6 +1208,18 @@ SWDetMath.install();
   $('ammo').onclick = (e) => { const b = e.target.closest('[data-ammo]'); if (b && !b.disabled) { st.ammoSel = b.dataset.ammo; renderSiegeUI(); } };
   $('tab-siege').onclick = () => { if (!st.job) setMode('siege'); };
   $('tab-build').onclick = () => { if (!st.job) setMode('build'); };
+  $('tab-board').onclick = () => { if (!st.job) setMode('board'); };
+  $('post-fort').onclick = (e) => {
+    if (st.job || !validateDraft()) { e.preventDefault(); return; }
+    $('post-fort').href = issueUrl('fort.yml', { fort_code: S.encodeFort(st.build.name, st.build.pieces) }, 'Fort: ' + S.cleanName(st.build.name));
+  };
+  $('board-tray').onclick = (e) => {
+    const go = e.target.closest('[data-siege]');
+    if (go) { siegeBoardFort(go.dataset.siege); return; }
+    if (e.target.closest('#board-refresh')) { loadBoard(true); return; }
+    const row = e.target.closest('tr[data-id]');
+    if (row) { board.sel = row.dataset.id; renderBoard(); }
+  };
   $('sound').onclick = () => { AU.setMuted(!AU.isMuted()); syncSound(); };
   function syncSound() { const on = !AU.isMuted(); $('sound').textContent = on ? 'Sound on' : 'Sound off'; $('sound').setAttribute('aria-pressed', on); }
   $('mats').onclick = (e) => {
@@ -1253,6 +1350,14 @@ SWDetMath.install();
       if (st.job) drawJob(W, H);
       return;
     }
+    if (st.mode === 'board') {
+      const bf = board.sel && boardFort(board.sel);
+      if (bf) {
+        try { S.decodeFort(bf.code).pieces.forEach(p => { const [w, h] = S.SHAPE[p.s]; drawBlock(p.m, (p.x + w / 2) * G, (p.y + h / 2) * G, w * G, h * G, 0, 0); }); } catch (e) {}
+        banner(bf.id + ' · ' + bf.name.toUpperCase());
+      } else banner('SEASON 0 BOARD');
+      return;
+    }
     const sim = st.sim; if (!sim) return;
     drawTrails(sim);
     for (const b of sim.blocks) { if (!b.alive) continue; const p = b.body.getPosition(); drawBlock(b.mat, p.x, p.y, b.w, b.h, b.body.getAngle(), Math.min(1, b.dmg / b.hp)); }
@@ -1365,7 +1470,7 @@ SWDetMath.install();
     pumpJob();
     if (st.mode === 'siege') tickSim(dt);
     draw(dt);
-    const name = st.mode === 'build' ? (st.build.name || 'My Fort') : currentFort().name;
+    const name = st.mode === 'build' ? (st.build.name || 'My Fort') : st.mode === 'board' ? 'Season 0 board' : currentFort().name;
     $('titleblock').innerHTML = `<b>${escapeHtml(name)}</b><br>${st.mode === 'siege' && st.sim ? 'tick ' + st.sim.tick : 'grid 0.5 m'} · ${S.VERSION}`;
     requestAnimationFrame(frame);
   }
@@ -1373,6 +1478,14 @@ SWDetMath.install();
   window.addEventListener('resize', resize);
   $('simver').textContent = S.VERSION;
   resize(); syncAimOut(); syncSound(); startSiege(); setMode('siege');
+  // Links: #board opens the board, #F12 opens a siege on board fort F12.
+  function route() {
+    const h = location.hash.slice(1);
+    if (h === 'board') setMode('board');
+    else if (/^F\d{1,6}$/.test(h)) { setMode('board'); loadBoard().then(() => { if (!siegeBoardFort(h)) toast('There is no fort ' + h + ' on the board yet.'); }); }
+  }
+  route();
+  window.addEventListener('hashchange', route);
   requestAnimationFrame(frame);
 })();
 

@@ -1,0 +1,17 @@
+name: Post a fort to the board
+description: Submit a fort code. The validator replays it and adds it to the season 0 board.
+title: "Fort: "
+labels: ["fort"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Paste a fort code from the builder's **Copy fort code** button, or use **Post to the board** in the game, which fills this in for you.
+        A GitHub Action replays the fort, checks that it stands on its own and fits the 800-gold budget, adds it to the board and replies here within a couple of minutes.
+  - type: input
+    id: fort_code
+    attributes:
+      label: Fort code
+      placeholder: SW1.My_Fort.sS1c00…
+    validations:
+      required: true
