@@ -2,6 +2,8 @@
 
 **Play: https://definitelynotai729-bit.github.io/siege-works/**
 
+> Siegeworks now also lives as an arcade cabinet inside [Elsewhere](https://github.com/definitelynotai729-bit/elsewhere), the universe of worlds this project grew into. Stars won in the cabinet pay out coins there.
+
 A physics siege game. Build a fort, share its code, and watch other people try to bring it down.
 
 This is **prototype 0.3**. It tests one question: is the core loop fun? The long-term goal is a persistent world that players own, run on its own proof-of-stake chain. There, forts are owned objects, sieges are transactions, and validators agree on every outcome by replaying the physics. None of the chain exists yet. The game has to be fun first.
