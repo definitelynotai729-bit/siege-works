@@ -37,3 +37,10 @@
   launches at 0.72x speed (heavy shot, slower throw). Founders' Keep then took 2-3 shots with varied winning lines.
   VERSION -> sim-0.3 (results tagged sim-0.2 no longer match by design). Re-solved pars: Iron Gate 2 -> 1.
 - Cross-engine battery at sim-0.3: 800/800 identical in V8, JSC, SpiderMonkey.
+- LIVE 2026-11-20: issue #1 posted Founders' Keep -> validator accepted it as F1 (ledger entry 1). Issue #2 sieged it
+  (SP1.p2i~63~ig.s7i~9m~jh, own fort so not counted) -> breached in 2, hash d406fa94 on GitHub's runner = d406fa94
+  locally. Public board shows F1 unbroken; #F1 deep link works; chain verifies.
+- ARM determinism still untested. Cheapest test: on a phone or Apple Silicon Mac open the site at #F1, load that
+  plan, and check the result hash reads d406fa94.
+- Next: owner's fun verdict; community accounts (need owner: phone verification); auto-rendered siege clips for
+  social posts (deterministic replay -> video via headless browser + ffmpeg).
