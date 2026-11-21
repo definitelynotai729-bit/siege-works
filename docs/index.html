@@ -996,6 +996,10 @@ SWDetMath.install();
     st.result = r;
     if (o === 'breached') AU.win(); else AU.lose();
     renderResult(); renderSiegeUI(); renderCard();
+    // When running inside an Elsewhere arcade cabinet, report the result so the host world can reward it.
+    if (window.parent !== window && f.kind === 'campaign' && !st.readonly && st.label !== 'bot') {
+      try { window.parent.postMessage({ source: 'siegeworks', type: 'result', fort: f.key, stars: r.stars, outcome: o, shots: r.shots }, '*'); } catch (e) {}
+    }
   }
   function renderResult() {
     const box = $('result-box');
