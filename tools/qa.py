@@ -1,9 +1,10 @@
 """Browser QA for the built page: plays a fort, runs a bot siege, checks the replay, takes screenshots.
-Usage: python3 tools/qa.py [path-to-html] [outdir]"""
+Usage: python3 tools/qa.py [path-or-url] [outdir]"""
 import sys, pathlib
 from playwright.sync_api import sync_playwright
 
-page_path = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else 'docs/index.html').resolve()
+target = sys.argv[1] if len(sys.argv) > 1 else 'docs/index.html'
+URL = target if target.startswith('http') else pathlib.Path(target).resolve().as_uri()
 out = pathlib.Path(sys.argv[2] if len(sys.argv) > 2 else '/tmp/siege-qa'); out.mkdir(parents=True, exist_ok=True)
 fails = []
 hashes = {}
@@ -21,7 +22,7 @@ with sync_playwright() as p:
         pg.on('pageerror', lambda e: errors.append(str(e)))
         pg.on('console', lambda m: errors.append(m.text) if m.type == 'error' else None)
         pg.add_init_script("try { localStorage.clear() } catch (e) {}")
-        pg.goto(page_path.as_uri())
+        pg.goto(URL)
         pg.wait_for_function("document.querySelector('#status') && document.querySelector('#status').textContent.includes('hearts')", timeout=20000)
         check('outpost' in pg.inner_text('#fort-card').lower(), 'opens on fort 1, Outpost')
         check(pg.evaluate("Math.sin(1e5 + 0.1234567)") == -0.08758790441220896, 'deterministic trig installed')
@@ -74,7 +75,7 @@ with sync_playwright() as p:
         if name == 'chromium':
             ph = b.new_page(viewport={'width': 390, 'height': 844}, device_scale_factor=2, is_mobile=True, has_touch=True)
             ph.on('pageerror', lambda e: errors.append(str(e)))
-            ph.goto(page_path.as_uri())
+            ph.goto(URL)
             ph.wait_for_function("document.querySelector('#status').textContent.includes('hearts')", timeout=20000)
             ph.wait_for_timeout(1200)
             wide = ph.evaluate("document.documentElement.scrollWidth > window.innerWidth + 1")
