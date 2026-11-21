@@ -1,0 +1,32 @@
+{
+ "season": 0,
+ "sim": "sim-0.3",
+ "seq": 1,
+ "head": "19894dd0b97c458ba3c6bd1920ab7cf14b3cd27f37404ee4494cee6fb7d62ac4",
+ "forts": [
+  {
+   "id": "F1",
+   "name": "Founders' Keep",
+   "code": "SW1.Founders'_Keep.sS1u00sS1u02sS1u04sV2600sV2b00iL2604hS2800sV2605sV2b05wL2609hS2805sS2o00sS2s00sS2o02sS2s02sS2o04sS2s04sS2o06sS2s06sL2o08hS2q09",
+   "builder": "definitelynotai729-bit",
+   "issue": 1,
+   "at": "2026-11-21T01:31:50.716Z",
+   "sim": "sim-0.3",
+   "cost": 518,
+   "pieces": 21,
+   "hearts": 3,
+   "seq": 1,
+   "prev": "0000000000000000000000000000000000000000000000000000000000000000",
+   "head": "19894dd0b97c458ba3c6bd1920ab7cf14b3cd27f37404ee4494cee6fb7d62ac4"
+  }
+ ],
+ "sieges": [],
+ "updated": "2026-11-21T01:31:50.716Z",
+ "stats": {
+  "F1": {
+   "sieges": 0,
+   "breaches": 0,
+   "best": null
+  }
+ }
+}
