@@ -1,0 +1,12 @@
+<!doctype html><meta charset="utf-8"><title>crosscheck</title>
+<script src="../detmath.js"></script>
+<script>if (location.search.includes('det=1')) SWDetMath.install();</script>
+<script src="../node_modules/planck/dist/planck.min.js"></script>
+<script src="../core.js"></script>
+<script src="crosscheck.js"></script>
+<script>
+  const t0 = performance.now();
+  window.__out = battery(planck, SW, +(new URLSearchParams(location.search).get('n') || 40));
+  window.__ms = performance.now() - t0;
+  window.__trig = [Math.sin(1e5 + 0.1234567), Math.cos(3.3), Math.sin(0.7)].join(',');
+</script>

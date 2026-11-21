@@ -1,12 +1,13 @@
 {
   "name": "siegeworks-sim",
-  "version": "0.0.1",
+  "version": "0.2.0",
   "private": true,
   "description": "Deterministic siege simulation for Siegeworks",
   "scripts": {
-    "test": "node test.js"
+    "test": "node test.js",
+    "solve": "node solve.js"
   },
   "dependencies": {
-    "planck": "^1.4.2"
+    "planck": "1.4.2"
   }
 }
