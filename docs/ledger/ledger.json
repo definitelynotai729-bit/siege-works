@@ -1,8 +1,8 @@
 {
  "season": 0,
  "sim": "sim-0.3",
- "seq": 1,
- "head": "19894dd0b97c458ba3c6bd1920ab7cf14b3cd27f37404ee4494cee6fb7d62ac4",
+ "seq": 2,
+ "head": "bcb956d959e682b3b6788654e104042a43e9c15727606488529cd3ea168d09cc",
  "forts": [
   {
    "id": "F1",
@@ -20,8 +20,26 @@
    "head": "19894dd0b97c458ba3c6bd1920ab7cf14b3cd27f37404ee4494cee6fb7d62ac4"
   }
  ],
- "sieges": [],
- "updated": "2026-11-21T01:31:50.716Z",
+ "sieges": [
+  {
+   "id": "S1",
+   "fort": "F1",
+   "attacker": "definitelynotai729-bit",
+   "plan": "SP1.p2i~63~ig.s7i~9m~jh",
+   "outcome": "breached",
+   "shots": 2,
+   "tick": 412,
+   "hash": "d406fa94",
+   "self": true,
+   "issue": 2,
+   "at": "2026-11-21T01:32:25.626Z",
+   "sim": "sim-0.3",
+   "seq": 2,
+   "prev": "19894dd0b97c458ba3c6bd1920ab7cf14b3cd27f37404ee4494cee6fb7d62ac4",
+   "head": "bcb956d959e682b3b6788654e104042a43e9c15727606488529cd3ea168d09cc"
+  }
+ ],
+ "updated": "2026-11-21T01:32:25.626Z",
  "stats": {
   "F1": {
    "sieges": 0,
