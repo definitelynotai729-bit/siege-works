@@ -1,0 +1,796 @@
+<title>Siegeworks</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=IBM+Plex+Sans+Condensed:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a drafting table. One blueprint sheet (the battlefield) with the instrument tray of controls beneath it. Deliberately single-theme. */
+:root {
+  --sheet: #0e3358;      /* blueprint paper */
+  --sheet-deep: #0a2746; /* page around the sheet */
+  --rule: #2f5f8f;       /* grid and hairlines */
+  --chalk: #e6f0fa;      /* white drafting ink */
+  --chalk-dim: #9fb9d3;
+  --pencil: #ffcd4d;     /* yellow draftsman's pencil, the one accent */
+  --wood: #d6a15a;
+  --stone: #a8b7c8;
+  --iron: #6b7c90;
+  --heart: #ff5a6a;
+  --bad: #ff7a6a;
+  --good: #7fe0a8;
+  --display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --body: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+html, body { height: auto; }
+body { background: var(--sheet-deep); color: var(--chalk); font: 15px/1.5 var(--body); }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 20px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 14px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 20px; }
+h1 { font: 900 clamp(34px, 6vw, 56px)/0.9 var(--display); letter-spacing: 0.02em; text-transform: uppercase; margin: 0; }
+h1 small { font: 500 12px var(--mono); letter-spacing: 0.12em; color: var(--pencil); vertical-align: top; margin-left: 8px; }
+.tag { color: var(--chalk-dim); max-width: 46ch; margin: 0; text-wrap: balance; }
+.tabs { display: flex; gap: 4px; }
+.tab { font: 700 18px var(--display); letter-spacing: 0.08em; text-transform: uppercase; background: none; color: var(--chalk-dim); border: 1px solid var(--rule); padding: 6px 18px; cursor: pointer; }
+.tab[aria-selected="true"] { color: var(--sheet-deep); background: var(--pencil); border-color: var(--pencil); }
+.sheet { position: relative; border: 1px solid var(--rule); background: var(--sheet); }
+canvas { display: block; width: 100%; touch-action: none; cursor: crosshair; }
+.titleblock { position: absolute; right: 8px; bottom: 8px; font: 11px/1.3 var(--mono); color: var(--chalk-dim); border: 1px solid var(--rule); background: color-mix(in srgb, var(--sheet) 85%, transparent); padding: 4px 8px; pointer-events: none; text-align: right; }
+.titleblock b { color: var(--chalk); font-weight: 500; }
+.tray { display: flex; flex-wrap: wrap; gap: 12px 22px; align-items: flex-start; }
+.group { display: grid; gap: 6px; min-width: 0; }
+.label { font: 500 11px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--chalk-dim); }
+.row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+button.chip, button.act { font: 500 14px var(--body); color: var(--chalk); background: var(--sheet); border: 1px solid var(--rule); padding: 6px 12px; cursor: pointer; display: inline-flex; gap: 8px; align-items: center; }
+button.chip[aria-pressed="true"] { border-color: var(--pencil); box-shadow: inset 0 0 0 1px var(--pencil); }
+button.chip:disabled { opacity: 0.4; cursor: not-allowed; }
+button.act { background: var(--pencil); color: var(--sheet-deep); border-color: var(--pencil); font-weight: 600; }
+button.act.ghost { background: none; color: var(--chalk); border-color: var(--rule); font-weight: 500; }
+button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--pencil); outline-offset: 2px; }
+.swatch { width: 12px; height: 12px; border: 1px solid var(--chalk); display: inline-block; }
+.count { font: 500 12px var(--mono); color: var(--pencil); }
+select, input[type=text], textarea { font: 14px var(--body); color: var(--chalk); background: var(--sheet); border: 1px solid var(--rule); padding: 6px 8px; }
+textarea { font: 12px/1.4 var(--mono); width: 100%; min-height: 54px; resize: vertical; box-sizing: border-box; }
+.slider { display: grid; grid-template-columns: 52px minmax(90px, 160px) 52px; gap: 8px; align-items: center; font: 13px var(--mono); }
+.slider output { color: var(--pencil); text-align: right; font-variant-numeric: tabular-nums; }
+input[type=range] { accent-color: var(--pencil); width: 100%; }
+.meter { width: 180px; max-width: 100%; height: 8px; border: 1px solid var(--rule); position: relative; }
+.meter i { position: absolute; inset: 0 auto 0 0; background: var(--pencil); }
+.meter.over i { background: var(--bad); }
+.status { font: 500 14px var(--mono); font-variant-numeric: tabular-nums; }
+.status .heart { color: var(--heart); }
+.result { border: 1px solid var(--pencil); padding: 12px 14px; display: grid; gap: 8px; }
+.result h2 { margin: 0; font: 900 30px/1 var(--display); text-transform: uppercase; letter-spacing: 0.04em; }
+.result.held h2 { color: var(--stone); }
+.result.breached h2 { color: var(--pencil); }
+.kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 12px; font: 12px/1.45 var(--mono); }
+.kv dt { color: var(--chalk-dim); }
+.kv dd { margin: 0; overflow-wrap: anywhere; }
+.match { color: var(--good); }
+.mismatch { color: var(--bad); }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px 28px; border-top: 1px solid var(--rule); padding-top: 16px; color: var(--chalk-dim); }
+.notes h3 { font: 700 18px var(--display); text-transform: uppercase; letter-spacing: 0.06em; color: var(--chalk); margin: 0 0 4px; }
+.notes p { margin: 0; max-width: 60ch; }
+.err { color: var(--bad); font-size: 13px; min-height: 1.2em; }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--pencil); color: var(--sheet-deep); font-weight: 600; padding: 8px 14px; }
+.hint { font-size: 13px; color: var(--chalk-dim); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Siegeworks <small>PROTOTYPE 0</small></h1>
+    </div>
+    <p class="tag">Build a fort and share its code. Someone else lays siege. Every siege replays to the same result, which is how validators will check it later.</p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Mode">
+    <button class="tab" role="tab" id="tab-siege" aria-selected="true">Siege</button>
+    <button class="tab" role="tab" id="tab-build" aria-selected="false">Build</button>
+  </div>
+
+  <div class="sheet">
+    <canvas id="field" aria-label="Battlefield. Drag backwards anywhere to aim, release to fire."></canvas>
+    <div class="titleblock" id="titleblock"></div>
+  </div>
+
+  <!-- SIEGE TRAY -->
+  <section class="tray" id="siege-tray">
+    <div class="group">
+      <span class="label">Fort</span>
+      <div class="row"><select id="fort-pick" aria-label="Choose a fort"></select><button class="act ghost" id="reset">Restart siege</button></div>
+      <span class="status" id="status"></span>
+    </div>
+    <div class="group">
+      <span class="label">Ammunition</span>
+      <div class="row" id="ammo"></div>
+    </div>
+    <div class="group">
+      <span class="label">Aim (or drag back on the sheet)</span>
+      <label class="slider" for="angle">Angle <input type="range" id="angle" min="-10" max="85" step="0.1" value="35"><output id="angle-out">35.0°</output></label>
+      <label class="slider" for="power">Power <input type="range" id="power" min="5" max="100" step="0.1" value="70"><output id="power-out">70.0%</output></label>
+    </div>
+    <div class="group">
+      <span class="label">&nbsp;</span>
+      <button class="act" id="fire">Fire</button>
+    </div>
+  </section>
+
+  <section id="result-box" hidden></section>
+
+  <!-- BUILD TRAY -->
+  <section class="tray" id="build-tray" hidden>
+    <div class="group">
+      <span class="label">Material</span>
+      <div class="row" id="mats"></div>
+    </div>
+    <div class="group">
+      <span class="label">Shape</span>
+      <div class="row" id="shapes"></div>
+    </div>
+    <div class="group">
+      <span class="label">Treasury</span>
+      <div class="meter" id="meter"><i></i></div>
+      <span class="status" id="spent"></span>
+    </div>
+    <div class="group">
+      <span class="label">Name</span>
+      <input type="text" id="fort-name" maxlength="28" value="My Fort" aria-label="Fort name">
+    </div>
+    <div class="group">
+      <span class="label">&nbsp;</span>
+      <div class="row">
+        <button class="act" id="test-fort">Siege it</button>
+        <button class="act ghost" id="copy-fort">Copy fort code</button>
+        <button class="act ghost" id="clear-fort">Clear</button>
+      </div>
+    </div>
+    <p class="hint" style="flex-basis:100%;margin:0">Click to place inside the dashed zone. Right-click or use Erase to remove. Every fort needs at least one heart. The attacker wins by destroying all of them.</p>
+  </section>
+
+  <section class="group">
+    <span class="label">Load a fort code or a siege plan</span>
+    <textarea id="load-text" placeholder="SW1.My_Fort.sS1c00…   or   SP1.s2i~…" aria-label="Paste a code"></textarea>
+    <div class="row"><button class="act ghost" id="load-btn">Load</button><span class="err" id="load-err"></span></div>
+  </section>
+
+  <section class="notes">
+    <div><h3>Fort code</h3><p>The whole fort in one short string. Later it becomes an on-chain object that you own and others can attack.</p></div>
+    <div><h3>Siege plan</h3><p>Every shot is just ammo, tick, angle and power. That is the transaction an attacker submits.</p></div>
+    <div><h3>Result hash</h3><p>Replaying a plan against a fort must give the same hash. That replay is what validators run to agree on who won.</p></div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/planck@1.4.2/dist/planck.min.js"></script>
+<script>
+// Siegeworks core simulation. Pure logic, no rendering.
+// Shared verbatim by the browser page and the headless node tests.
+// Fixed 1/60 s timestep; every shot is keyed to a tick so a siege replays exactly.
+(function (root) {
+  const DT = 1 / 60;
+  const GRID = 0.5;                    // metres per build-grid cell
+  const ZONE = { x0: 60, x1: 112, y1: 36 }; // build zone in grid cells (30..56 m wide, 18 m tall)
+  const BUDGET = 800;
+  const LAUNCH = { x: 5, y: 3 };
+  const MAXV = 32;                     // m/s at full draw
+  const SETTLE = 90;                   // ticks the fort settles before the first shot is allowed
+
+  const MAT = {
+    w: { name: 'Wood',  density: 0.7, friction: 0.7,  hp: 70,  cost: 10 },
+    s: { name: 'Stone', density: 2.4, friction: 0.85, hp: 320, cost: 25 },
+    i: { name: 'Iron',  density: 5.5, friction: 0.55, hp: 900, cost: 60 },
+    h: { name: 'Heart', density: 1.0, friction: 0.8,  hp: 26,  cost: 0 },
+  };
+  // shape -> [width, height] in grid cells
+  const SHAPE = { S: [2, 2], H: [4, 1], V: [1, 4], L: [6, 1] };
+  const AMMO = {
+    stone:   { name: 'Stone shot', r: 0.35, density: 9, count: 3 },
+    boulder: { name: 'Boulder',    r: 0.62, density: 7, count: 1 },
+    pot:     { name: 'Fire pot',   r: 0.4,  density: 3, count: 1, blast: 4.5, power: 1400 },
+  };
+  const MIN_HIT = 2.2; // m/s approach speed below which contacts do no damage (resting loads never hurt)
+
+  function pieceCost(p) {
+    const [w, h] = SHAPE[p.s];
+    return p.m === 'h' ? 0 : Math.round(MAT[p.m].cost * (w * h) / 4);
+  }
+  function fortCost(pieces) { return pieces.reduce((a, p) => a + pieceCost(p), 0); }
+  function rect(p) { const [w, h] = SHAPE[p.s]; return { x0: p.x, y0: p.y, x1: p.x + w, y1: p.y + h }; }
+  function overlaps(a, b) { return a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1; }
+  function canPlace(pieces, p) {
+    const r = rect(p);
+    if (r.x0 < ZONE.x0 || r.x1 > ZONE.x1 || r.y0 < 0 || r.y1 > ZONE.y1) return false;
+    if (p.m === 'h' && p.s !== 'S') return false;
+    return !pieces.some(q => overlaps(r, rect(q)));
+  }
+
+  // ---- compact share codes -------------------------------------------------
+  const b36 = (n) => n.toString(36).padStart(2, '0');
+  function encodeFort(name, pieces) {
+    const safe = (name || 'Untitled').replace(/[^A-Za-z0-9 '-]/g, '').slice(0, 28).trim().replace(/ /g, '_');
+    return 'SW1.' + safe + '.' + pieces.map(p => p.m + p.s + b36(p.x) + b36(p.y)).join('');
+  }
+  function decodeFort(code) {
+    const m = /^SW1\.([A-Za-z0-9_'-]*)\.([a-z0-9A-Z]*)$/.exec((code || '').trim());
+    if (!m) throw new Error('That is not a fort code. Fort codes start with SW1.');
+    const body = m[2];
+    if (body.length % 6) throw new Error('This fort code is cut short. Copy the whole code and try again.');
+    const pieces = [];
+    for (let k = 0; k < body.length; k += 6) {
+      const p = { m: body[k], s: body[k + 1], x: parseInt(body.slice(k + 2, k + 4), 36), y: parseInt(body.slice(k + 4, k + 6), 36) };
+      if (!MAT[p.m] || !SHAPE[p.s] || !canPlace(pieces, p)) throw new Error('This fort code has a piece in an impossible spot.');
+      pieces.push(p);
+    }
+    return { name: m[1].replace(/_/g, ' '), pieces };
+  }
+  function encodePlan(shots) {
+    // one shot = ammo letter + tick + angle (0.1 deg) + power (0.1%)
+    return 'SP1.' + shots.map(s => s.type[0] + s.t.toString(36) + '~' + Math.round(s.a * 10).toString(36) + '~' + Math.round(s.p * 1000).toString(36)).join('.');
+  }
+  function decodePlan(code) {
+    const parts = (code || '').trim().split('.');
+    if (parts[0] !== 'SP1') throw new Error('That is not a siege plan. Plans start with SP1.');
+    const types = { s: 'stone', b: 'boulder', p: 'pot' };
+    return parts.slice(1).filter(Boolean).map(x => {
+      const [a, b, c] = x.slice(1).split('~');
+      return { type: types[x[0]], t: parseInt(a, 36), a: parseInt(b, 36) / 10, p: parseInt(c, 36) / 1000 };
+    });
+  }
+
+  // ---- result hash: FNV-1a over the rounded final state -------------------
+  function stateHash(sim) {
+    let h = 0x811c9dc5;
+    const feed = (n) => { const s = String(n); for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } };
+    feed(sim.tick);
+    for (const b of sim.blocks) {
+      feed(b.alive ? 1 : 0);
+      if (!b.alive) continue;
+      const p = b.body.getPosition();
+      feed(Math.round(p.x * 1000)); feed(Math.round(p.y * 1000)); feed(Math.round(b.body.getAngle() * 1000)); feed(Math.round(b.dmg));
+    }
+    return h.toString(16).padStart(8, '0');
+  }
+
+  // ---- the simulation ------------------------------------------------------
+  function createSim(pl, pieces, plan) {
+    const world = new pl.World({ gravity: pl.Vec2(0, -10) });
+    const ground = world.createBody();
+    ground.createFixture(pl.Edge(pl.Vec2(-40, 0), pl.Vec2(140, 0)), { friction: 0.9 });
+    // launcher mound
+    ground.createFixture(pl.Polygon([pl.Vec2(0, 0), pl.Vec2(8, 0), pl.Vec2(6.5, 1.8), pl.Vec2(2, 1.8)]), { friction: 0.9 });
+
+    const sim = { world, tick: 0, blocks: [], shots: [], plan: (plan || []).slice(), fired: [], blasts: [], log: [], lastShotTick: -1, ammo: {} };
+    for (const k in AMMO) sim.ammo[k] = AMMO[k].count;
+
+    pieces.forEach((p, idx) => {
+      const [w, h] = SHAPE[p.s];
+      const mat = MAT[p.m];
+      const body = world.createBody({ type: 'dynamic', position: pl.Vec2((p.x + w / 2) * GRID, (p.y + h / 2) * GRID) });
+      body.createFixture(pl.Box(w * GRID / 2 - 0.005, h * GRID / 2 - 0.005), { density: mat.density, friction: mat.friction, restitution: 0.05 });
+      const blk = { idx, piece: p, body, mat: p.m, hp: mat.hp * (w * h) / 4 * (p.m === 'h' ? 4 / (w * h) : 1), dmg: 0, alive: true, w: w * GRID, h: h * GRID };
+      body.setUserData(blk);
+      sim.blocks.push(blk);
+    });
+    sim.hearts = sim.blocks.filter(b => b.mat === 'h');
+
+    const hurt = (ud, e) => { if (ud && ud.hp !== undefined && ud.alive) ud.dmg += e; };
+
+    world.on('pre-solve', (contact) => {
+      const fa = contact.getFixtureA(), fb = contact.getFixtureB();
+      const ba = fa.getBody(), bb = fb.getBody();
+      const wm = contact.getWorldManifold(null);
+      if (!wm || !wm.points.length) return;
+      const pt = wm.points[0], n = wm.normal;
+      const va = ba.getLinearVelocityFromWorldPoint(pt), vb = bb.getLinearVelocityFromWorldPoint(pt);
+      const vn = (va.x - vb.x) * n.x + (va.y - vb.y) * n.y; // positive = approaching (normal points A->B)
+      if (vn < MIN_HIT) return;
+      const ma = ba.isDynamic() ? ba.getMass() : Infinity, mb = bb.isDynamic() ? bb.getMass() : Infinity;
+      const mred = ma === Infinity ? mb : mb === Infinity ? ma : (ma * mb) / (ma + mb);
+      const e = 0.5 * mred * (vn * vn - MIN_HIT * MIN_HIT);
+      const ua = ba.getUserData(), ub = bb.getUserData();
+      hurt(ua, e); hurt(ub, e);
+      if (ua && ua.kind === 'shot' && ua.type === 'pot' && sim.tick > ua.armed) ua.boom = true;
+      if (ub && ub.kind === 'shot' && ub.type === 'pot' && sim.tick > ub.armed) ub.boom = true;
+    });
+
+    const pendingOf = (type) => sim.plan.filter(s => !s.done && s.type === type).length;
+    sim.ammoFree = (type) => sim.ammo[type] - pendingOf(type);
+    sim.canFire = (type) => sim.tick >= SETTLE && sim.ammoFree(type) > 0;
+
+    sim.fireNow = (type, angleDeg, power) => {
+      // queue a shot at the current tick; applied at the start of the next step
+      if (!sim.canFire(type)) return false;
+      sim.plan.push({ type, t: sim.tick, a: angleDeg, p: power });
+      return true;
+    };
+
+    function launch(s) {
+      // validation: a plan may not fire before the fort settles or beyond its ammo
+      if (!AMMO[s.type] || sim.tick < SETTLE || sim.ammo[s.type] <= 0) { s.rejected = true; return; }
+      sim.ammo[s.type]--;
+      const A = AMMO[s.type];
+      const rad = s.a * Math.PI / 180, v = Math.max(0.05, Math.min(1, s.p)) * MAXV;
+      const body = world.createBody({ type: 'dynamic', bullet: true, position: pl.Vec2(LAUNCH.x, LAUNCH.y) });
+      body.createFixture(pl.Circle(A.r), { density: A.density, friction: 0.5, restitution: 0.1 });
+      body.setLinearVelocity(pl.Vec2(Math.cos(rad) * v, Math.sin(rad) * v));
+      const ud = { kind: 'shot', type: s.type, body, r: A.r, armed: sim.tick + 6, born: sim.tick };
+      body.setUserData(ud);
+      sim.shots.push(ud);
+      sim.fired.push(s);
+      sim.lastShotTick = sim.tick;
+    }
+
+    function explode(shot) {
+      const A = AMMO.pot, c = shot.body.getPosition();
+      sim.blasts.push({ x: c.x, y: c.y, t: sim.tick });
+      for (const b of sim.blocks) {
+        if (!b.alive) continue;
+        const p = b.body.getPosition();
+        const dx = p.x - c.x, dy = p.y - c.y, d = Math.sqrt(dx * dx + dy * dy);
+        if (d > A.blast) continue;
+        const f = 1 - d / A.blast, k = Math.max(d, 0.3);
+        b.body.applyLinearImpulse(pl.Vec2(dx / k * f * 22, dy / k * f * 22 + f * 6), p, true);
+        b.dmg += A.power * f * f;
+      }
+      world.destroyBody(shot.body);
+      shot.dead = true;
+    }
+
+    sim.step = () => {
+      // planned shots for this tick (replays and live play go through the same path)
+      for (const s of sim.plan) if (s.t === sim.tick && !s.done) { s.done = true; launch(s); }
+      world.step(DT, 10, 4);
+      sim.tick++;
+      for (const sh of sim.shots) {
+        if (sh.dead) continue;
+        const p = sh.body.getPosition();
+        if (sh.boom) { explode(sh); continue; }
+        const slow = sh.body.getLinearVelocity().lengthSquared() < 0.05 && sim.tick - sh.born > 30;
+        if (p.x > 120 || p.x < -20 || p.y < -5 || slow || sim.tick - sh.born > 900) {
+          if (sh.type === 'pot' && !(p.x > 120 || p.x < -20)) { explode(sh); continue; }
+          world.destroyBody(sh.body); sh.dead = true;
+        }
+      }
+      for (const b of sim.blocks) {
+        if (!b.alive) continue;
+        const p = b.body.getPosition();
+        const fell = p.y < -2 || p.x > 125 || p.x < -25;
+        if (b.dmg >= b.hp || fell) {
+          b.alive = false; b.diedAt = sim.tick;
+          sim.log.push({ t: sim.tick, x: p.x, y: p.y, mat: b.mat, w: b.w, h: b.h, a: b.body.getAngle() });
+          world.destroyBody(b.body);
+        }
+      }
+    };
+
+    sim.heartsLeft = () => sim.hearts.filter(h => h.alive).length;
+    sim.ammoLeft = () => Object.keys(sim.ammo).reduce((a, k) => a + sim.ammo[k], 0);
+    sim.isQuiet = () => {
+      for (const b of sim.blocks) if (b.alive && b.body.isAwake() && b.body.getLinearVelocity().lengthSquared() > 0.02) return false;
+      return sim.shots.every(s => s.dead);
+    };
+    // outcome: null while undecided
+    sim.outcome = () => {
+      if (sim.tick < SETTLE) return null;
+      if (sim.heartsLeft() === 0) return 'breached';
+      const pending = sim.plan.some(s => !s.done);
+      if (sim.ammoLeft() === 0 && !pending && sim.tick - sim.lastShotTick > 120 && (sim.isQuiet() || sim.tick - sim.lastShotTick > 600)) return 'held';
+      return null;
+    };
+    return sim;
+  }
+
+  // ---- sample forts ---------------------------------------------------------
+  function sampleForts() {
+    const forts = [];
+    // 1. Watchtower: a stone tower with a heart on top behind a wooden fence
+    {
+      const P = [];
+      for (let y = 0; y < 12; y += 4) { P.push({ m: 's', s: 'V', x: 84, y }); P.push({ m: 's', s: 'V', x: 88, y }); P.push({ m: 's', s: 'L', x: 83, y: y + 4 }); }
+      P.length = 0;
+      // two stone posts, plank roof, repeated 3 storeys
+      for (let k = 0; k < 3; k++) {
+        const y = k * 5;
+        P.push({ m: 's', s: 'V', x: 84, y }); P.push({ m: 's', s: 'V', x: 88, y });
+        P.push({ m: 'w', s: 'L', x: 84, y: y + 4 });
+      }
+      P.push({ m: 'h', s: 'S', x: 86, y: 15 });
+      P.push({ m: 'h', s: 'S', x: 85, y: 0 });
+      for (let x = 74; x < 80; x += 1) P.push({ m: 'w', s: 'V', x, y: 0 });
+      forts.push({ name: 'Watchtower', pieces: P });
+    }
+    // 2. Bunker: low, wide stone with iron lintels
+    {
+      const P = [];
+      for (const x of [76, 84, 92]) { P.push({ m: 's', s: 'S', x, y: 0 }); P.push({ m: 's', s: 'S', x, y: 2 }); }
+      P.push({ m: 'i', s: 'L', x: 76, y: 4 }); P.push({ m: 'i', s: 'L', x: 88, y: 4 });
+      P.push({ m: 's', s: 'H', x: 82, y: 4 });
+      P.push({ m: 'h', s: 'S', x: 79, y: 0 }); P.push({ m: 'h', s: 'S', x: 87, y: 0 });
+      P.push({ m: 's', s: 'S', x: 78, y: 5 }); P.push({ m: 's', s: 'S', x: 90, y: 5 });
+      P.push({ m: 'w', s: 'L', x: 77, y: 7 }); P.push({ m: 'w', s: 'L', x: 87, y: 7 });
+      forts.push({ name: 'Bunker', pieces: P });
+    }
+    // 3. Wall and keep: a thick front wall shields a heart in a back keep
+    {
+      const P = [];
+      for (let y = 0; y < 16; y += 4) { P.push({ m: 's', s: 'V', x: 72, y }); P.push({ m: 'w', s: 'V', x: 73, y }); }
+      for (let y = 0; y < 8; y += 2) P.push({ m: 's', s: 'S', x: 96, y });
+      for (let y = 0; y < 8; y += 2) P.push({ m: 's', s: 'S', x: 102, y });
+      P.push({ m: 'i', s: 'L', x: 97, y: 8 }); P.push({ m: 'w', s: 'H', x: 97, y: 9 }); P.push({ m: 'w', s: 'H', x: 101, y: 9 });
+      P.push({ m: 'h', s: 'S', x: 99, y: 0 }); P.push({ m: 'h', s: 'S', x: 99, y: 10 });
+      forts.push({ name: 'Wall and Keep', pieces: P });
+    }
+    return forts;
+  }
+
+  const api = { DT, GRID, ZONE, BUDGET, LAUNCH, MAXV, SETTLE, MAT, SHAPE, AMMO, pieceCost, fortCost, rect, canPlace, encodeFort, decodeFort, encodePlan, decodePlan, stateHash, createSim, sampleForts };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.SW = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+(function () {
+  const pl = window.planck, S = window.SW;
+  const $ = (id) => document.getElementById(id);
+  const css = getComputedStyle(document.documentElement);
+  const C = {}; ['sheet','rule','chalk','chalk-dim','pencil','wood','stone','iron','heart','bad','good'].forEach(k => C[k] = css.getPropertyValue('--' + k).trim());
+  const MATCOL = { w: C.wood, s: C.stone, i: C.iron, h: C.heart };
+  const VIEW = { x0: -1, x1: 61, y0: -2.5, y1: 23 };
+  const cv = $('field'), ctx = cv.getContext('2d');
+  let scale = 10, dpr = 1;
+
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  };
+
+  const samples = S.sampleForts();
+  const st = {
+    mode: 'siege', forts: samples.slice(), fortIdx: 0, sim: null, result: null, replayOf: null,
+    ammoSel: 'stone', aim: null, acc: 0, last: 0, logSeen: 0, parts: [],
+    build: { mat: 's', shape: 'S', erase: false, pieces: store.get('sw_draft', []), name: store.get('sw_draft_name', 'My Fort') },
+    hover: null,
+  };
+  const loaded = store.get('sw_loaded', []);
+  loaded.forEach(f => { try { const d = S.decodeFort(f); st.forts.push(d); } catch (e) {} });
+
+  function resize() {
+    const w = cv.clientWidth || 800;
+    const h = Math.round(w * (VIEW.y1 - VIEW.y0) / (VIEW.x1 - VIEW.x0));
+    dpr = window.devicePixelRatio || 1;
+    cv.style.height = h + 'px'; cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    scale = w / (VIEW.x1 - VIEW.x0);
+  }
+  const X = (x) => (x - VIEW.x0) * scale, Y = (y) => (VIEW.y1 - y) * scale;
+  const toWorld = (ev) => { const r = cv.getBoundingClientRect(); return { x: (ev.clientX - r.left) / scale + VIEW.x0, y: VIEW.y1 - (ev.clientY - r.top) / scale, px: ev.clientX - r.left, py: ev.clientY - r.top }; };
+
+  function toast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 1800); }
+  function copy(text, ok) {
+    const fallback = () => { $('load-text').value = text; $('load-text').select(); toast('Selected below. Press Ctrl+C to copy.'); };
+    try { navigator.clipboard.writeText(text).then(() => toast(ok), fallback); } catch (e) { fallback(); }
+  }
+
+  // ------------------------------------------------------------------ siege
+  function currentFort() { return st.forts[st.fortIdx]; }
+  function startSiege(plan) {
+    const f = currentFort();
+    st.sim = S.createSim(pl, f.pieces, plan || []);
+    st.result = null; st.replayOf = plan ? st.replayOf : null; st.logSeen = 0; st.parts = []; st.acc = 0;
+    renderResult(); renderSiegeUI();
+  }
+  function fire() {
+    if (!st.sim || st.result) return;
+    const a = +$('angle').value, p = +$('power').value / 100;
+    if (!st.sim.fireNow(st.ammoSel, a, p)) {
+      if (st.sim.tick < S.SETTLE) toast('Wait for the fort to settle.'); else toast('No ' + S.AMMO[st.ammoSel].name.toLowerCase() + ' left.');
+      return;
+    }
+    if (st.sim.ammoFree(st.ammoSel) <= 0) { const next = Object.keys(S.AMMO).find(k => st.sim.ammoFree(k) > 0); if (next) st.ammoSel = next; }
+    renderSiegeUI();
+  }
+  function renderSiegeUI() {
+    const sel = $('fort-pick');
+    sel.innerHTML = st.forts.map((f, i) => `<option value="${i}">${escapeHtml(f.name)}${i >= samples.length ? ' (yours)' : ''}</option>`).join('');
+    sel.value = String(st.fortIdx);
+    const sim = st.sim;
+    $('ammo').innerHTML = Object.keys(S.AMMO).map(k => {
+      const n = sim ? sim.ammoFree(k) : S.AMMO[k].count;
+      return `<button class="chip" data-ammo="${k}" aria-pressed="${st.ammoSel === k}" ${n <= 0 ? 'disabled' : ''}>${S.AMMO[k].name} <span class="count">×${n}</span></button>`;
+    }).join('');
+    updateStatus();
+  }
+  function updateStatus() {
+    const sim = st.sim; if (!sim) return;
+    const total = sim.hearts.length, left = sim.heartsLeft();
+    const shots = sim.fired.length;
+    const settling = sim.tick < S.SETTLE ? ' · settling…' : '';
+    $('status').innerHTML = `<span class="heart">♦</span> ${left}/${total} hearts standing · ${shots} shot${shots === 1 ? '' : 's'} fired${settling}`;
+  }
+  function renderResult() {
+    const box = $('result-box');
+    if (!st.result) { box.hidden = true; box.innerHTML = ''; return; }
+    const r = st.result, f = currentFort();
+    const breached = r.outcome === 'breached';
+    const shots = r.plan.length;
+    let replayLine = '';
+    if (st.replayOf) {
+      const same = st.replayOf.hash === r.hash;
+      replayLine = `<dt>Replay check</dt><dd class="${same ? 'match' : 'mismatch'}">${same ? 'Match: replay reached the identical state ' + r.hash : 'Mismatch: ' + st.replayOf.hash + ' vs ' + r.hash}</dd>`;
+    }
+    box.hidden = false;
+    box.innerHTML = `<div class="result ${r.outcome}">
+      <h2>${breached ? 'Breached in ' + shots + ' shot' + (shots === 1 ? '' : 's') : 'The fort held'}</h2>
+      <dl class="kv">
+        <dt>Fort</dt><dd>${escapeHtml(f.name)} · ${f.pieces.length} pieces · ${S.fortCost(f.pieces)} gold</dd>
+        <dt>Blocks destroyed</dt><dd>${r.destroyed} of ${f.pieces.length}</dd>
+        <dt>Decided at tick</dt><dd>${r.tick} (${(r.tick / 60).toFixed(1)} s of simulated time)</dd>
+        <dt>Result hash</dt><dd>${r.hash}</dd>
+        <dt>Siege plan</dt><dd id="plan-code">${r.code}</dd>
+        ${replayLine}
+      </dl>
+      <div class="row">
+        <button class="act" id="replay">Replay this siege</button>
+        <button class="act ghost" id="copy-plan">Copy siege plan</button>
+        <button class="act ghost" id="again">Try again</button>
+      </div>
+    </div>`;
+    $('replay').onclick = () => { st.replayOf = { hash: r.hash }; startSiege(S.decodePlan(r.code)); };
+    $('copy-plan').onclick = () => copy(r.code, 'Siege plan copied');
+    $('again').onclick = () => { st.replayOf = null; startSiege(); };
+  }
+  function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+  // ------------------------------------------------------------------ build
+  function budgetLeft(pieces) { return S.BUDGET - S.fortCost(pieces); }
+  function renderBuildUI() {
+    const b = st.build;
+    $('mats').innerHTML = Object.keys(S.MAT).map(k => `<button class="chip" data-mat="${k}" aria-pressed="${!b.erase && b.mat === k}"><span class="swatch" style="background:${MATCOL[k]}"></span>${S.MAT[k].name} <span class="count">${k === 'h' ? 'free' : S.MAT[k].cost + 'g'}</span></button>`).join('')
+      + `<button class="chip" data-erase="1" aria-pressed="${b.erase}">Erase</button>`;
+    const shapeNames = { S: 'Block 1×1 m', H: 'Plank 2 m', V: 'Post 2 m', L: 'Beam 3 m' };
+    $('shapes').innerHTML = Object.keys(S.SHAPE).map(k => `<button class="chip" data-shape="${k}" aria-pressed="${b.shape === k}" ${b.mat === 'h' && k !== 'S' ? 'disabled' : ''}>${shapeNames[k]}</button>`).join('');
+    const spent = S.fortCost(b.pieces), hearts = b.pieces.filter(p => p.m === 'h').length;
+    $('meter').classList.toggle('over', spent > S.BUDGET);
+    $('meter').firstElementChild.style.width = Math.min(100, spent / S.BUDGET * 100) + '%';
+    $('spent').innerHTML = `${spent} / ${S.BUDGET} gold · <span style="color:var(--heart)">♦</span> ${hearts} heart${hearts === 1 ? '' : 's'}`;
+    $('fort-name').value = b.name;
+    store.set('sw_draft', b.pieces); store.set('sw_draft_name', b.name);
+  }
+  function ghostAt(w) {
+    const b = st.build, [gw, gh] = S.SHAPE[b.mat === 'h' ? 'S' : b.shape];
+    const p = { m: b.mat, s: b.mat === 'h' ? 'S' : b.shape, x: Math.round(w.x / S.GRID - gw / 2), y: Math.max(0, Math.round(w.y / S.GRID - gh / 2)) };
+    const ok = S.canPlace(b.pieces, p) && (p.m === 'h' || S.pieceCost(p) <= budgetLeft(b.pieces));
+    return { p, ok };
+  }
+  function pieceAt(w) {
+    const gx = w.x / S.GRID, gy = w.y / S.GRID;
+    for (let i = st.build.pieces.length - 1; i >= 0; i--) { const r = S.rect(st.build.pieces[i]); if (gx >= r.x0 && gx < r.x1 && gy >= r.y0 && gy < r.y1) return i; }
+    return -1;
+  }
+  function buildFortObj() { return { name: st.build.name.trim() || 'My Fort', pieces: st.build.pieces.slice() }; }
+  function addCustomFort(f) {
+    const code = S.encodeFort(f.name, f.pieces);
+    let idx = st.forts.findIndex((x, i) => i >= samples.length && S.encodeFort(x.name, x.pieces) === code);
+    if (idx < 0) { st.forts.push(f); idx = st.forts.length - 1; const list = store.get('sw_loaded', []); list.push(code); store.set('sw_loaded', list.slice(-12)); }
+    return idx;
+  }
+
+  // ------------------------------------------------------------------ mode
+  function setMode(m) {
+    st.mode = m;
+    $('tab-siege').setAttribute('aria-selected', m === 'siege'); $('tab-build').setAttribute('aria-selected', m === 'build');
+    $('siege-tray').hidden = m !== 'siege'; $('build-tray').hidden = m !== 'build';
+    $('result-box').hidden = m !== 'siege' || !st.result;
+    if (m === 'build') renderBuildUI(); else renderSiegeUI();
+  }
+
+  // ------------------------------------------------------------------ input
+  cv.addEventListener('contextmenu', e => e.preventDefault());
+  cv.addEventListener('pointerdown', e => {
+    const w = toWorld(e);
+    if (st.mode === 'siege') {
+      if (!st.sim || st.result) return;
+      cv.setPointerCapture(e.pointerId);
+      st.aim = { sx: e.clientX, sy: e.clientY };
+    } else {
+      const b = st.build;
+      if (e.button === 2 || b.erase) { const i = pieceAt(w); if (i >= 0) { b.pieces.splice(i, 1); renderBuildUI(); } return; }
+      const g = ghostAt(w);
+      if (g.ok) { b.pieces.push(g.p); renderBuildUI(); }
+      else toast(S.canPlace(b.pieces, g.p) ? 'Not enough gold for that piece.' : 'That spot is taken or outside the build zone.');
+    }
+  });
+  cv.addEventListener('pointermove', e => {
+    const w = toWorld(e);
+    st.hover = w;
+    if (st.mode === 'siege' && st.aim) {
+      const dx = st.aim.sx - e.clientX, dy = e.clientY - st.aim.sy; // pull back: shot goes opposite to the drag
+      const len = Math.hypot(dx, dy);
+      if (len > 6) {
+        const ang = Math.max(-10, Math.min(85, Math.atan2(dy, dx) * 180 / Math.PI));
+        const pow = Math.max(5, Math.min(100, len / (cv.clientWidth * 0.32) * 100));
+        setAim(ang, pow);
+      }
+    }
+  });
+  const endAim = () => { if (st.aim) { st.aim = null; fire(); } };
+  cv.addEventListener('pointerup', endAim);
+  cv.addEventListener('pointercancel', () => { st.aim = null; });
+  cv.addEventListener('pointerleave', () => { st.hover = null; });
+  function setAim(a, p) { $('angle').value = a.toFixed(1); $('power').value = p.toFixed(1); syncAimOut(); }
+  function syncAimOut() { $('angle-out').textContent = (+$('angle').value).toFixed(1) + '°'; $('power-out').textContent = (+$('power').value).toFixed(1) + '%'; }
+  $('angle').addEventListener('input', syncAimOut); $('power').addEventListener('input', syncAimOut);
+  $('fire').onclick = fire;
+  $('reset').onclick = () => { st.replayOf = null; startSiege(); };
+  $('fort-pick').onchange = (e) => { st.fortIdx = +e.target.value; st.replayOf = null; startSiege(); };
+  $('ammo').onclick = (e) => { const b = e.target.closest('[data-ammo]'); if (b && !b.disabled) { st.ammoSel = b.dataset.ammo; renderSiegeUI(); } };
+  $('tab-siege').onclick = () => setMode('siege');
+  $('tab-build').onclick = () => setMode('build');
+  $('mats').onclick = (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.erase) st.build.erase = !st.build.erase; else { st.build.mat = b.dataset.mat; st.build.erase = false; }
+    renderBuildUI();
+  };
+  $('shapes').onclick = (e) => { const b = e.target.closest('[data-shape]'); if (b && !b.disabled) { st.build.shape = b.dataset.shape; renderBuildUI(); } };
+  $('fort-name').oninput = (e) => { st.build.name = e.target.value; store.set('sw_draft_name', st.build.name); };
+  $('clear-fort').onclick = () => { st.build.pieces = []; renderBuildUI(); };
+  $('copy-fort').onclick = () => {
+    if (!st.build.pieces.some(p => p.m === 'h')) { toast('Add at least one heart first.'); return; }
+    copy(S.encodeFort(st.build.name, st.build.pieces), 'Fort code copied');
+  };
+  $('test-fort').onclick = () => {
+    if (!st.build.pieces.some(p => p.m === 'h')) { toast('Add at least one heart first.'); return; }
+    st.fortIdx = addCustomFort(buildFortObj()); st.replayOf = null; startSiege(); setMode('siege');
+  };
+  $('load-btn').onclick = () => {
+    const txt = $('load-text').value.trim(); $('load-err').textContent = '';
+    try {
+      if (txt.startsWith('SP1')) {
+        const plan = S.decodePlan(txt); st.replayOf = null; startSiege(plan); setMode('siege');
+        toast('Replaying the plan against ' + currentFort().name);
+      } else {
+        const f = S.decodeFort(txt);
+        if (!f.pieces.some(p => p.m === 'h')) throw new Error('This fort has no heart, so it cannot be sieged.');
+        st.fortIdx = addCustomFort(f); st.replayOf = null; startSiege(); setMode('siege');
+        toast('Loaded ' + f.name);
+      }
+    } catch (e) { $('load-err').textContent = e.message; }
+  };
+  window.addEventListener('keydown', e => {
+    if (st.mode !== 'siege' || e.target.matches('input, textarea, select')) return;
+    if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); fire(); }
+  });
+
+  // ------------------------------------------------------------------ loop
+  function tickSim(dt) {
+    const sim = st.sim; if (!sim) return;
+    st.acc += dt; let n = 0;
+    while (st.acc >= S.DT && n < 6) {
+      st.acc -= S.DT; n++;
+      sim.step();
+      while (st.logSeen < sim.log.length) spawnDebris(sim.log[st.logSeen++]);
+      if (!st.result) {
+        const o = sim.outcome();
+        if (o) {
+          st.result = { outcome: o, tick: sim.tick, hash: S.stateHash(sim), plan: sim.fired.slice(), code: S.encodePlan(sim.fired), destroyed: sim.blocks.filter(b => !b.alive).length };
+          renderResult();
+        }
+      }
+      if (sim.tick > (st.result ? st.result.tick + 400 : 1e9)) { st.acc = 0; break; } // freeze after the result settles
+    }
+    if (n) updateStatus();
+  }
+  function spawnDebris(ev) {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const k = reduce ? 3 : 9;
+    for (let i = 0; i < k; i++) st.parts.push({ x: ev.x + (Math.random() - 0.5) * ev.w, y: ev.y + (Math.random() - 0.5) * ev.h, vx: (Math.random() - 0.5) * 8, vy: Math.random() * 7, life: 1, s: 0.12 + Math.random() * 0.22, c: MATCOL[ev.mat], rot: Math.random() * 6 });
+  }
+
+  // ------------------------------------------------------------------ draw
+  function draw(dt) {
+    const W = cv.width / dpr, H = cv.height / dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = C.sheet; ctx.fillRect(0, 0, W, H);
+    // grid: 1 m minor, 5 m major
+    ctx.lineWidth = 1;
+    for (let x = Math.ceil(VIEW.x0); x <= VIEW.x1; x++) { ctx.strokeStyle = x % 5 ? 'rgba(120,170,220,0.10)' : 'rgba(140,190,240,0.24)'; ctx.beginPath(); ctx.moveTo(X(x) + 0.5, 0); ctx.lineTo(X(x) + 0.5, H); ctx.stroke(); }
+    for (let y = Math.ceil(VIEW.y0); y <= VIEW.y1; y++) { ctx.strokeStyle = y % 5 ? 'rgba(120,170,220,0.10)' : 'rgba(140,190,240,0.24)'; ctx.beginPath(); ctx.moveTo(0, Y(y) + 0.5); ctx.lineTo(W, Y(y) + 0.5); ctx.stroke(); }
+    // ground and hatching
+    ctx.strokeStyle = C.chalk; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(0, Y(0)); ctx.lineTo(W, Y(0)); ctx.stroke();
+    ctx.save(); ctx.beginPath(); ctx.rect(0, Y(0), W, H - Y(0)); ctx.clip(); ctx.strokeStyle = 'rgba(230,240,250,0.25)'; ctx.lineWidth = 1;
+    for (let x = -H; x < W; x += 9) { ctx.beginPath(); ctx.moveTo(x, H); ctx.lineTo(x + (H - Y(0)), Y(0)); ctx.stroke(); }
+    ctx.restore();
+    // scale ticks
+    ctx.fillStyle = C['chalk-dim']; ctx.font = `${Math.max(9, scale * 0.9)}px "IBM Plex Mono", monospace`; ctx.textAlign = 'center';
+    for (let x = 0; x <= 60; x += 10) ctx.fillText(x + ' m', X(x), Y(-1.6));
+    // launcher mound + trebuchet sketch
+    ctx.fillStyle = C.sheet; ctx.strokeStyle = C.chalk; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(X(0), Y(0)); ctx.lineTo(X(8), Y(0)); ctx.lineTo(X(6.5), Y(1.8)); ctx.lineTo(X(2), Y(1.8)); ctx.closePath(); ctx.fill(); ctx.stroke();
+    drawTrebuchet();
+    // build zone
+    const z = S.ZONE, G = S.GRID;
+    ctx.setLineDash([6, 5]); ctx.strokeStyle = st.mode === 'build' ? C.pencil : 'rgba(255,205,77,0.25)'; ctx.lineWidth = 1;
+    ctx.strokeRect(X(z.x0 * G), Y(z.y1 * G), (z.x1 - z.x0) * G * scale, z.y1 * G * scale); ctx.setLineDash([]);
+    if (st.mode === 'build') { ctx.fillStyle = C.pencil; ctx.textAlign = 'left'; ctx.fillText('BUILD ZONE  26 × 18 m', X(z.x0 * G) + 4, Y(z.y1 * G) - 6); }
+
+    if (st.mode === 'build') {
+      for (const p of st.build.pieces) { const [w, h] = S.SHAPE[p.s]; drawBlock(p.m, (p.x + w / 2) * G, (p.y + h / 2) * G, w * G, h * G, 0, 0); }
+      if (st.hover) {
+        if (st.build.erase) { const i = pieceAt(st.hover); if (i >= 0) { const r = S.rect(st.build.pieces[i]); ctx.strokeStyle = C.bad; ctx.lineWidth = 2; ctx.strokeRect(X(r.x0 * G), Y(r.y1 * G), (r.x1 - r.x0) * G * scale, (r.y1 - r.y0) * G * scale); } }
+        else { const g = ghostAt(st.hover), [w, h] = S.SHAPE[g.p.s]; ctx.globalAlpha = 0.55; drawBlock(g.p.m, (g.p.x + w / 2) * G, (g.p.y + h / 2) * G, w * G, h * G, 0, 0); ctx.globalAlpha = 1; ctx.strokeStyle = g.ok ? C.pencil : C.bad; ctx.lineWidth = 1.5; ctx.strokeRect(X(g.p.x * G), Y((g.p.y + h) * G), w * G * scale, h * G * scale); }
+      }
+      return;
+    }
+    const sim = st.sim; if (!sim) return;
+    for (const b of sim.blocks) { if (!b.alive) continue; const p = b.body.getPosition(); drawBlock(b.mat, p.x, p.y, b.w, b.h, b.body.getAngle(), Math.min(1, b.dmg / b.hp)); }
+    for (const s of sim.shots) {
+      if (s.dead) continue; const p = s.body.getPosition();
+      ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), s.r * scale, 0, Math.PI * 2);
+      ctx.fillStyle = s.type === 'pot' ? '#ff9a3c' : C.chalk; ctx.fill();
+      if (s.type === 'pot') { ctx.strokeStyle = C.pencil; ctx.lineWidth = 2; ctx.stroke(); }
+    }
+    for (const bl of sim.blasts) { const age = sim.tick - bl.t; if (age > 24) continue; const r = (age / 24) * S.AMMO.pot.blast; ctx.beginPath(); ctx.arc(X(bl.x), Y(bl.y), r * scale, 0, Math.PI * 2); ctx.strokeStyle = `rgba(255,154,60,${1 - age / 24})`; ctx.lineWidth = 3; ctx.stroke(); }
+    // debris (visual only, not part of the simulation)
+    for (const q of st.parts) {
+      q.vy -= 18 * dt; q.x += q.vx * dt; q.y += q.vy * dt; q.life -= dt * 0.9; q.rot += dt * 5;
+      if (q.y < q.s / 2) { q.y = q.s / 2; q.vy *= -0.3; q.vx *= 0.7; }
+      ctx.save(); ctx.globalAlpha = Math.max(0, q.life); ctx.translate(X(q.x), Y(q.y)); ctx.rotate(q.rot); ctx.fillStyle = q.c; ctx.fillRect(-q.s * scale / 2, -q.s * scale / 2, q.s * scale, q.s * scale); ctx.restore();
+    }
+    st.parts = st.parts.filter(q => q.life > 0);
+    // aim preview
+    if (!st.result && sim.tick >= S.SETTLE && sim.ammoFree(st.ammoSel) > 0) drawArc();
+    if (sim.tick < S.SETTLE) { ctx.fillStyle = C.pencil; ctx.textAlign = 'center'; ctx.font = `600 ${Math.max(12, scale * 1.2)}px "IBM Plex Sans Condensed", sans-serif`; ctx.fillText('FORT SETTLING…', W / 2, Y(20)); }
+  }
+  function drawTrebuchet() {
+    const L = S.LAUNCH, a = +$('angle').value * Math.PI / 180;
+    ctx.strokeStyle = C.chalk; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(X(3), Y(1.8)); ctx.lineTo(X(L.x - 0.4), Y(L.y - 0.2)); ctx.lineTo(X(6), Y(1.8)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(X(L.x), Y(L.y)); ctx.lineTo(X(L.x - Math.cos(a) * 2.2), Y(L.y - Math.sin(a) * 2.2)); ctx.stroke();
+    ctx.beginPath(); ctx.arc(X(L.x), Y(L.y), 3, 0, Math.PI * 2); ctx.fillStyle = C.pencil; ctx.fill();
+  }
+  function drawArc() {
+    const L = S.LAUNCH, a = +$('angle').value * Math.PI / 180, v = +$('power').value / 100 * S.MAXV;
+    ctx.fillStyle = C.pencil;
+    const vx = Math.cos(a) * v, vy = Math.sin(a) * v;
+    for (let t = 0.05; t < 0.9; t += 0.05) {
+      const x = L.x + vx * t, y = L.y + vy * t - 5 * t * t;
+      if (y < 0) break;
+      ctx.globalAlpha = 1 - t; ctx.beginPath(); ctx.arc(X(x), Y(y), 2, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  function drawBlock(m, x, y, w, h, ang, dmg) {
+    ctx.save(); ctx.translate(X(x), Y(y)); ctx.rotate(-ang);
+    const pw = w * scale, ph = h * scale;
+    if (m === 'h') {
+      const t = performance.now() / 600;
+      ctx.shadowColor = C.heart; ctx.shadowBlur = 8 + Math.sin(t) * 4;
+      ctx.beginPath(); ctx.moveTo(0, -ph / 2); ctx.lineTo(pw / 2, 0); ctx.lineTo(0, ph / 2); ctx.lineTo(-pw / 2, 0); ctx.closePath();
+      ctx.fillStyle = C.heart; ctx.fill(); ctx.shadowBlur = 0; ctx.strokeStyle = C.chalk; ctx.lineWidth = 1.2; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-pw / 4, -ph / 4); ctx.lineTo(0, -ph / 2 + 2); ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.stroke();
+    } else {
+      ctx.fillStyle = MATCOL[m]; ctx.fillRect(-pw / 2, -ph / 2, pw, ph);
+      ctx.strokeStyle = 'rgba(10,30,55,0.55)'; ctx.lineWidth = 1;
+      if (m === 'w') { for (let i = 1; i < 3; i++) { const yy = -ph / 2 + ph * i / 3; ctx.beginPath(); ctx.moveTo(-pw / 2 + 2, yy); ctx.lineTo(pw / 2 - 2, yy); ctx.stroke(); } }
+      if (m === 's') { ctx.beginPath(); ctx.moveTo(-pw / 2, 0); ctx.lineTo(pw / 2, 0); ctx.stroke(); }
+      if (m === 'i') { ctx.fillStyle = 'rgba(230,240,250,0.8)'; const r = Math.max(1, scale * 0.06); for (const sx of [-1, 1]) for (const sy of [-1, 1]) { ctx.beginPath(); ctx.arc(sx * (pw / 2 - r * 3), sy * (ph / 2 - r * 3), r, 0, Math.PI * 2); ctx.fill(); } }
+      if (dmg > 0.15) { ctx.strokeStyle = `rgba(10,25,45,${0.25 + dmg * 0.6})`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(-pw * 0.3, -ph / 2); ctx.lineTo(-pw * 0.05, -ph * 0.05); ctx.lineTo(pw * 0.2, ph * 0.1); if (dmg > 0.5) { ctx.moveTo(-pw * 0.05, -ph * 0.05); ctx.lineTo(-pw * 0.25, ph / 2); } ctx.stroke(); }
+      ctx.strokeStyle = C.chalk; ctx.lineWidth = 1; ctx.strokeRect(-pw / 2, -ph / 2, pw, ph);
+    }
+    ctx.restore();
+  }
+
+  function frame(now) {
+    const dt = Math.min(0.1, st.last ? (now - st.last) / 1000 : 0); st.last = now;
+    if (st.mode === 'siege') tickSim(dt);
+    draw(dt);
+    const f = st.mode === 'build' ? buildFortObj() : currentFort();
+    $('titleblock').innerHTML = `<b>${escapeHtml(f.name)}</b><br>${st.mode === 'siege' && st.sim ? 'tick ' + st.sim.tick : 'scale 1 : ' + Math.round(100 / scale)}`;
+    requestAnimationFrame(frame);
+  }
+
+  if (!pl) { $('status').textContent = 'The physics engine did not load. Reload the page to try again.'; return; }
+  window.addEventListener('resize', resize);
+  resize(); syncAimOut(); startSiege(); setMode('siege');
+  requestAnimationFrame(frame);
+})();
+</script>
